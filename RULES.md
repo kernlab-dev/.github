@@ -43,7 +43,7 @@
 | 预留段 | 面 | 规划规则 |
 |---|---|---|
 | KLSG070-079 | `KernLab.Loom.Endpoints` | 070 契约缺标记接口／071 路由重复／072 契约无端点配对（消费者工程可关）／073 切面未实现 IAspect（此四条自 Cohort `COH001-005` 迁入）／**074 契约结果类型与端点返回类型不一致**／**075 端点方法形态非法**／**076 route 路径参数与契约成员不匹配**／**077 `[FromLastEventId]` 用于非 SSE 端点**；078-079 预留 |
-| KLSG080-089 | `KernLab.Loom.Di` | captive dependency／未注册解析／重复注册／注册面越界／标注误用 |
+| KLSG080-099 | `KernLab.Loom.Di` | 080 captive dependency／081 依赖未登记／082-083 多实现无 Default·多 Default／084 `[SingleImplementation]` 被违反／085 标注误用／086 严格档注册面越界／087 登记未消费（W）／**088 依赖环**／**089 Transient 实现 IDisposable（W）**／**090 Singleton 注入 IServiceProvider（W）**／**091 约定表违规（W）**；092-099 预留 |
 
 ### KernLab.Tier 域专属（前缀 `KTSG`）
 
