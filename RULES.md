@@ -38,12 +38,15 @@
 
 `KernLab.Loom.Analyzers` 配置键：`loom_layer.forbidden_reference`、`loom_layer.zero_internal_refs`、`loom_layer.internal_assembly_prefix`、`loom_layer.allowed_reference`、`loom_layer.namespace_prefix`、`loom_layer.allowed_framework_prefix`、`loom_forbidden.pack`（`reflection`／`sync_over_async`／`fire_and_forget`／`bare_threads`／`hotpath_discipline`）。
 
-**预留段位（Loom 待建两面——设计稿 [endpoints-di-design](https://github.com/kernlab-dev/kernlab-loom/blob/main/docs/design/endpoints-di-design.md)）**
+**两面规则（已落地——设计稿 [endpoints-di-design](https://github.com/kernlab-dev/kernlab-loom/blob/main/docs/design/endpoints-di-design.md)）**
 
-| 预留段 | 面 | 规划规则 |
+| ID 段 | 包 | 规则 |
 |---|---|---|
-| KLSG070-079 | `KernLab.Loom.Endpoints` | 070 契约缺标记接口／071 路由重复／072 契约无端点配对（消费者工程可关）／073 切面未实现 IAspect（此四条自 Cohort `COH001-005` 迁入）／**074 契约结果类型与端点返回类型不一致**／**075 端点方法形态非法**／**076 route 路径参数与契约成员不匹配**／**077 `[FromLastEventId]` 用于非 SSE 端点**；078-079 预留 |
-| KLSG080-099 | `KernLab.Loom.Di` | 080 captive dependency／081 依赖未登记／082-083 多实现无 Default·多 Default／084 `[SingleImplementation]` 被违反／085 标注误用／086 严格档注册面越界／087 登记未消费（W）／**088 依赖环**／**089 Transient 实现 IDisposable（W）**／**090 Singleton 注入 IServiceProvider（W）**／**091 约定表违规（W）**；092-099 预留 |
+| KLSG070-079 | `KernLab.Loom.Endpoints` | 070 契约缺标记接口／071 路由重复／072 契约无端点配对（消费者工程可关）／073 切面未实现 IAspect（此四条自 Cohort `COH001-005` 迁入）／074 契约结果类型与端点返回类型不一致／075 端点方法形态非法／076 route 路径参数与契约成员不匹配／077 `[FromLastEventId]` 用于非 SSE 端点或参数类型非 string／**078 `LoomEndpoints*` MSBuild 配置键非法（原预留槽改配——配置错误绝静默）**；079 预留 |
+| KLSG080-099 | `KernLab.Loom.Di` | 080 captive dependency／081 依赖未登记／082-083 多实现无 Default·多 Default／084 `[SingleImplementation]` 被违反／085 标注误用／086 严格档注册面越界／087 登记未消费（W）／088 依赖环／089 Transient 实现 IDisposable（W）／090 Singleton 注入 IServiceProvider（W）／091 约定表违规（W）／**092 `loom_di.*` 配置键非法（原预留槽改配——配置错误绝静默）**；093-099 预留 |
+
+`KernLab.Loom.Endpoints` 配置键（MSBuild 属性，消费方 csproj 直设）：`LoomEndpointsNamespace`、`LoomEndpointsClassName`、`LoomEndpointsConsumerOnly`、`LoomEndpointsServiceLifetime`。
+`KernLab.Loom.Di` 配置键（analyzer config——**必须落 `.globalconfig` 或 `.editorconfig` 节内**，无节键静默失效判例）：`loom_di.registration_face`（`interop`｜`declarative`）、`loom_di.unused_registration`（`off`｜`warn`）、`loom_di.lifetime_conventions`（箭头规则表，语法同 `loom_layer.*`）。
 
 ### KernLab.Tier 域专属（前缀 `KTSG`）
 
