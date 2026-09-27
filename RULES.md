@@ -54,7 +54,8 @@ Tier 域侧不读配置键（全部 Error 默认，声明即报）。
 1. **键必须落在 `.globalconfig`（`is_global = true`）或 `.editorconfig` 的节内。** 写在 `.editorconfig` 任何节头**之前**的"无节键"被 Roslyn **静默忽略**——Tier 的家族规则曾因此长期不执法（2026-09-27 实测：无节键 0 命中／移入 `[*]` 节 2 命中）。
 2. **严重级按路径分段声明**：生产代码 `error`，测试／探针／基准可 `none`（同步测试等 Task 完成是测试惯用法）。
 3. **受控豁免用 `#pragma warning disable <ID>` 并注明理由**（治理原语内核的同步等待、受控丢弃属此类）。**改名时必须同步 pragma 里的 ID**——否则豁免静默失效、规则重新报警（Tier 判例：22 个文件的 pragma 未随改名更新）。
-4. **新增规则两步**：①产生包内 `AnalyzerReleases.Unshipped.md` 登记（RS2008 门；RS2007 非确定性误报可带理由豁免）；②本页补一行并声明段位。
+4. **新增规则两步**：①产生包内 `AnalyzerReleases.{Shipped,Unshipped}.md` 登记（RS2008 门；RS2007 非确定性误报可带理由豁免）；②本页补一行并声明段位。
+5. **登记对账自动护栏**：`KernLab.Loom` 测试门校验"源码实际 ID ↔ 登记表"一一对应、跨面不撞号、ID 必为 `KLSG`+三位数字（判例：Loom 早期四份登记被覆盖回 Tier 内容、Cli 段格式化笔误出过 `KLSG0554`）。产品仓域专属诊断建议照建同款门。
 
 ## 相关
 
