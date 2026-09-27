@@ -39,6 +39,11 @@ on:
         type: string
         required: false
         default: ''
+      skip_pack:
+        description: '尚未立项包工程的仓（首包前空跑形态）——跳过打包/上传/发布'
+        type: boolean
+        required: false
+        default: false
       dotnet_build:
         description: '构建/测试 SDK（精确版本——通配会被 latestMajor 滚上未知大版本）'
         type: string
@@ -94,6 +99,7 @@ jobs:
           fi
 
       - name: Pack
+        if: inputs.skip_pack != true
         env:
           VERSION_INPUT: '${{ inputs.version }}'
         shell: bash
@@ -103,7 +109,7 @@ jobs:
           VERSION=${VERSION#v}
           EXPLICIT='${{ inputs.pack_projects }}'
           if [ -n "$EXPLICIT" ]; then
-            PROJECTS="$EXPLICIT"
+            PROJECTS=$(printf '%s\n' "$EXPLICIT" | tr ' ' '\n')
           else
             PROJECTS=$(grep -rls "<IsPackable>true</IsPackable>" "${{ inputs.pack_root }}" --include=*.csproj || true)
           fi
@@ -116,6 +122,7 @@ jobs:
           done
 
       - name: Upload packages
+        if: inputs.skip_pack != true
         uses: actions/upload-artifact@v4
         with:
           name: nupkg
@@ -124,7 +131,7 @@ jobs:
   publish:
     needs: build
     # ★ 发布门（job 级）：仅 tag 推送发布；dispatch 空跑整 job 跳过
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && inputs.skip_pack != true
     runs-on: ubuntu-latest
     permissions:
       contents: read
