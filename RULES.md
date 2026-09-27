@@ -38,6 +38,13 @@
 
 `KernLab.Loom.Analyzers` 配置键：`loom_layer.forbidden_reference`、`loom_layer.zero_internal_refs`、`loom_layer.internal_assembly_prefix`、`loom_layer.allowed_reference`、`loom_layer.namespace_prefix`、`loom_layer.allowed_framework_prefix`、`loom_forbidden.pack`（`reflection`／`sync_over_async`／`fire_and_forget`／`bare_threads`／`hotpath_discipline`）。
 
+**预留段位（Loom 待建两面——设计稿 [endpoints-di-design](https://github.com/kernlab-dev/kernlab-loom/blob/main/docs/design/endpoints-di-design.md)）**
+
+| 预留段 | 面 | 规划规则 |
+|---|---|---|
+| KLSG070-079 | `KernLab.Loom.Endpoints` | 契约缺标记接口／路由重复／契约无端点配对／切面未实现 IAspect（自 Cohort `COH001-005` 迁入重编号） |
+| KLSG080-089 | `KernLab.Loom.Di` | captive dependency／未注册解析／重复注册／注册面越界／标注误用 |
+
 ### KernLab.Tier 域专属（前缀 `KTSG`）
 
 | ID 段 | 产生方 | 规则 |
