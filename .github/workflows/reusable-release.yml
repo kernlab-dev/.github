@@ -25,10 +25,20 @@ on:
         required: false
         default: ''
       test_projects:
-        description: '测试工程 glob'
+        description: '测试工程（glob 或空格分隔清单；空 = 用 solution 本身做测试入口）'
         type: string
         required: false
         default: 'tests/*/*.csproj'
+      test_retries:
+        description: '每个测试工程的重试次数（0 = 不重试）'
+        type: string
+        required: false
+        default: '0'
+      pack_projects:
+        description: '显式打包清单（空格分隔 csproj 路径；空 = 扫 IsPackable=true）'
+        type: string
+        required: false
+        default: ''
       dotnet_build:
         description: '构建/测试 SDK（精确版本——通配会被 latestMajor 滚上未知大版本）'
         type: string
@@ -56,14 +66,32 @@ jobs:
           dotnet-version: '${{ inputs.dotnet_build }}'
 
       - name: Build and test (formal lane)
-        if: inputs.run_tests && inputs.solution != ''
+        if: inputs.run_tests
+        env:
+          SOLUTION: '${{ inputs.solution }}'
+          TEST_PROJECTS: '${{ inputs.test_projects }}'
+          RETRIES: '${{ inputs.test_retries }}'
         shell: bash
         run: |
           set -e
-          dotnet build "${{ inputs.solution }}" -c Release --nologo
-          for t in ${{ inputs.test_projects }}; do
-            dotnet test "$t" -c Release --no-build --nologo || exit 1
-          done
+          if [ -n "$SOLUTION" ]; then
+            dotnet build "$SOLUTION" -c Release --nologo
+          fi
+          NOBUILD=''
+          [ -n "$SOLUTION" ] && NOBUILD='--no-build'
+          ATTEMPTS=$((RETRIES + 1))
+          if [ -n "$TEST_PROJECTS" ]; then
+            for t in $TEST_PROJECTS; do
+              ok=0
+              for i in $(seq 1 $ATTEMPTS); do
+                if dotnet test "$t" -c Release $NOBUILD --nologo; then ok=1; break; fi
+                [ "$i" -lt "$ATTEMPTS" ] && sleep 10
+              done
+              [ "$ok" -eq 1 ] || exit 1
+            done
+          elif [ -n "$SOLUTION" ]; then
+            dotnet test "$SOLUTION" -c Release --no-build --nologo
+          fi
 
       - name: Pack
         env:
@@ -73,7 +101,12 @@ jobs:
           set -e
           VERSION=${VERSION_INPUT:-${GITHUB_REF_NAME#preview-v}}
           VERSION=${VERSION#v}
-          PROJECTS=$(grep -rls "<IsPackable>true</IsPackable>" "${{ inputs.pack_root }}" --include=*.csproj || true)
+          EXPLICIT='${{ inputs.pack_projects }}'
+          if [ -n "$EXPLICIT" ]; then
+            PROJECTS="$EXPLICIT"
+          else
+            PROJECTS=$(grep -rls "<IsPackable>true</IsPackable>" "${{ inputs.pack_root }}" --include=*.csproj || true)
+          fi
           if [ -z "$PROJECTS" ]; then
             echo "::error::没有可打包项目（${{ inputs.pack_root }} 下无 IsPackable=true 的 csproj）——先立项包工程再发版"
             exit 1
