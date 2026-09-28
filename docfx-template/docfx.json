@@ -50,7 +50,7 @@
     "globalMetadata": {
       "_appName": "<产品名>",
       "_appTitle": "<产品名 — 一句话定位>",
-      "_appFooter": "© 2026 <a href=\"https://kernlab.dev\" target=\"_blank\" rel=\"noopener\">kernlab.dev</a> All Rights Reserved",
+      "_appFooter": "© 2026 <a href=\"https://kernlab.dev\" target=\"_blank\" rel=\"noopener\">kernlab.dev</a> · <a href=\"/\">文档门户</a>",
       "_enableSearch": true,
       // 指向产品公开仓（私有产品仓填公开镜像或组织门面）
       "_gitContribute": { "repo": "https://github.com/kernlab-dev/<产品仓名>", "branch": "main" }

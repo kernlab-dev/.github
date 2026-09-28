@@ -14,7 +14,7 @@
 | [`docfx.json`](docfx.json) | metadata + build 配置骨架 | 复制到产品仓 `docs-site/docfx.json`，按注释改项目清单与产品名 |
 | [`main.css`](main.css) | 全家族统一样式（navbar 收紧/landing hero/卡片柔和色阶/TOC 宽度/footer） | 原样复制到 `docs-site/main.css`，**不要改**——家族一致性优先 |
 | [`toc.yml`](toc.yml) | 顶部导航骨架 | 复制后按产品章节改名改链接 |
-| [`index.md`](index.md) | landing 页骨架（hero + 特性卡） | 复制后填产品名/简介/卡片 |
+| [`index.md`](index.md) | landing 页骨架（hero + 特性卡 + 文档导航 + 快速链接——Tier/Traffic 同款实态） | 复制后填产品名/简介/卡片，文档导航按顶导分类补全 |
 | [`../workflow-templates/docs-deploy.yml`](../workflow-templates/docs-deploy.yml) | CI 模板（构建→artifact→触发聚合） | 新建仓可在 Actions 页直接选用；存量仓复制到 `.github/workflows/` |
 
 ## 快速开始（新产品接入）
@@ -39,6 +39,8 @@
 | 8 | **workflow paths 过滤漏文档源** | 文档改了站不更新，排查半天 | workflow `paths` 含 `src/**/docs/**`、`COORDINATION.md`、站点目录、README |
 | 9 | **DOCS_SYNC_TOKEN 未配** | dispatch 静默失败或假绿 | workflow 对空 token 显式打日志跳过（不 fail，但日志可见） |
 | 10 | **perf 文档平铺**（`docs/runtime/` 根下） | 与使用指南混排，导航混乱 | perf 族统一 `docs/<层>/perf/` 子目录，对外链接对齐该布局 |
+| 11 | **首页缺「文档导航/快速链接」区块**（模板旧骨架只有 hero+特性卡，产品自行发挥出弱观感） | 首页与家族站不一致，导航面不全 | index.md 骨架已升级为完整实态（Tier/Traffic 同款彩色描边卡）；footer 同步家族实态 `kernlab.dev · 文档门户` |
+| 12 | **聚合仓裸路径 200 重写**（`/product` 无斜杠直吐页面） | 相对 CSS 解析到根 404＝整页裸排 | 聚合仓 `_redirects` 裸路径一律 **301 到带斜杠**（kernlab-docs 判例，全产品生效） |
 
 ## 版本与升级
 
