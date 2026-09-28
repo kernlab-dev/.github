@@ -1,0 +1,32 @@
+name: CI
+
+# KernLab 家族标准 CI 调用桩（新建仓从 Actions 模板选用后按需改）：
+# 逻辑单源在 kernlab-dev/.github 的 reusable-ci——本文件只声明触发与参数。
+#
+# Runner 双形态：
+#   ① 默认 GitHub 托管机器（下面现状）：零基础设施，push 即跑；
+#   ② 自建独立 CI 机器：runner 建好后把 runners_matrix 换成标签组合并关 setup-dotnet：
+#        runners_matrix: '["win-ci","pve-ci"]'
+#        use_setup_dotnet: false
+#      （自建机预装 SDK——中国网络下 setup-dotnet 基线 runtime 下载随机卡死，禁开）
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:   # main/dev 之外的功能分支走手动：gh workflow run ci --ref <branch>
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
+    with:
+      runner: ubuntu-latest              # GitHub 托管单腿
+      # runners_matrix: '["win-ci", "pve-ci"]'   # ← 自建组合形态（二选一）
+      # use_setup_dotnet: false                  # ← 自建机已预装 SDK 时关掉
+      build_config: Release
+      test_projects: 'tests/*/*.csproj'
+      test_retries: '1'                  # 时序敏感套件重试吸收 runner 噪音

@@ -1,0 +1,88 @@
+name: ci-reusable
+
+# 家族共享 CI 管线（workflow_call——各仓只留调用桩，逻辑单源收口于此）。
+# Runner 双形态：
+#   ① 默认 GitHub 托管机器——runner: ubuntu-latest 单腿，零基础设施；
+#   ② 自建独立 CI 机器——runners_matrix 传标签组合（JSON 数组，如 '["win-ci","pve-ci"]'），
+#      配 use_setup_dotnet: false（自建机预装 SDK；中国网络下 setup-dotnet 基线 runtime
+#      下载随机卡死判例——自建机不走该步骤，SDK 升级归 runner 维护）。
+# 扩展点：重并发组拆分、分项目特殊重试等仓专属形态，在调用桩侧加 job 补充（参照 kernlab-tier ci.yml）。
+# 调用桩示例：workflow-templates/ci.yml。
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: '单腿 runner 标签（默认 GitHub 托管）'
+        type: string
+        default: 'ubuntu-latest'
+      runners_matrix:
+        description: '多腿自建组合（JSON 数组，如 ["win-ci","pve-ci"]；空 = 单腿 runner）'
+        type: string
+        default: ''
+      dotnet_version:
+        description: 'SDK 版本（精确版本——通配会被 latestMajor 滚上未知大版本）'
+        type: string
+        default: '8.0.x'
+      use_setup_dotnet:
+        description: 'GitHub 托管机保持 true；自建机已预装 SDK 时 false'
+        type: boolean
+        default: true
+      build_config:
+        description: '构建配置'
+        type: string
+        default: 'Release'
+      solution:
+        description: '解决方案/项目路径（空 = 根 sln 自动发现）'
+        type: string
+        default: ''
+      test_projects:
+        description: '测试工程 glob（空 = 只构建不测试）'
+        type: string
+        default: 'tests/*/*.csproj'
+      test_retries:
+        description: '每个测试工程失败重试次数（吸收 runner 噪音；0 = 不重试）'
+        type: string
+        default: '0'
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.runners_matrix != '' && inputs.runners_matrix || format('["{0}"]', inputs.runner)) }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        if: inputs.use_setup_dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '${{ inputs.dotnet_version }}'
+
+      - name: Build
+        run: dotnet build ${{ inputs.solution }} -c ${{ inputs.build_config }} --nologo -v q
+
+      - name: Test（逐工程执行 + 失败重试）
+        if: inputs.test_projects != ''
+        shell: bash
+        run: |
+          retries=${{ inputs.test_retries }}
+          fail=0
+          for proj in ${{ inputs.test_projects }}; do
+            [ -e "$proj" ] || continue
+            n=0
+            until dotnet test "$proj" -c ${{ inputs.build_config }} --no-build --nologo; do
+              n=$((n+1))
+              if [ "$n" -gt "$retries" ]; then
+                echo "::error::$proj 重试 $retries 次后仍红"
+                fail=1
+                break
+              fi
+              echo "::warning::$proj 第 $n 次失败，重试（吸收 runner 噪音）"
+            done
+          done
+          exit $fail

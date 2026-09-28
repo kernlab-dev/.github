@@ -1,0 +1,6 @@
+{
+  "name": "CI",
+  "description": "标准 CI 门禁——构建+测试（家族 reusable 单源；默认 GitHub 托管，可切自建 runner 组合）",
+  "iconName": "octicon-gear",
+  "categories": ["continuous-integration"]
+}
