@@ -15,7 +15,7 @@ Self-built, zero black-box dependencies, embeddable and composable.*
 | **KernLab.Claim** | 统一认证中心：验证身份、签发身份声明，全平台唯一信任源 | 筹备中 | [nuget.org · 预览版已发布](https://www.nuget.org/packages?q=KernLab.Claim) |
 | **KernLab.Traffic** | 全协议统一流量平台：单端口多协议复用、指令流编排管线、原生多租户、CP/DP 分离集群 | [docs.kernlab.dev/traffic](https://docs.kernlab.dev/traffic/) | 筹备中 |
 | **KernLab.Loom** | 编译期层：源生成器 + 规则分析器 + 构建骨架（协议/布局/端点/装配编译期织入）——Tier 为 0 号消费者 | [docs.kernlab.dev/loom](https://docs.kernlab.dev/loom/) | [nuget.org · 预览版已发布](https://www.nuget.org/packages?q=KernLab.Loom) |
-| **KernLab.Cell** | 运行时容器：一租户一容器的进程隔离与池化，OS 级资源边界 | [docs.kernlab.dev/cell](https://docs.kernlab.dev/cell/) | 筹备中 |
+| **KernLab.Cell** | 运行时容器：一租户一容器的进程隔离与池化，OS 级资源边界 | [docs.kernlab.dev/cell](https://docs.kernlab.dev/cell/) | [nuget.org · 预览版已发布](https://www.nuget.org/packages?q=KernLab.Cell) |
 
 产品门户：[kernlab.dev](https://kernlab.dev) · 统一文档站：[docs.kernlab.dev](https://docs.kernlab.dev)
 
