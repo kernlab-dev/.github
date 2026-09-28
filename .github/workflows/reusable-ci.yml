@@ -52,7 +52,9 @@ jobs:
   ci:
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(inputs.runners_matrix != '' && inputs.runners_matrix || format('["{0}"]', inputs.runner)) }}
+      # matrix 须为对象（维度名 → 值数组）——fromJSON 直接回数组会被 workflow 校验拒收
+      matrix:
+        os: ${{ fromJSON(inputs.runners_matrix != '' && inputs.runners_matrix || format('["{0}"]', inputs.runner)) }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
