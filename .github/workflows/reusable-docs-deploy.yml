@@ -74,5 +74,10 @@ jobs:
             echo "DOCS_SYNC_TOKEN 未配置，跳过聚合部署（产品仓 Settings → Secrets 配置）"
             exit 0
           fi
-          gh workflow run deploy.yml -R kernlab-dev/kernlab-docs \
-            -f product=${{ inputs.product }} -f repo=${{ github.repository }} -f run_id=${{ github.run_id }}
+          # ★ REST dispatches 端点——`gh workflow run` 走 GraphQL 查默认分支，
+          #   fine-grained PAT 会被拒（Resource not accessible 判例）；REST + 显式 ref 无此问题
+          gh api -X POST "repos/kernlab-dev/kernlab-docs/actions/workflows/deploy.yml/dispatches" \
+            -f ref=main \
+            -f "inputs[product]=${{ inputs.product }}" \
+            -f "inputs[repo]=${{ github.repository }}" \
+            -f "inputs[run_id]=${{ github.run_id }}"
