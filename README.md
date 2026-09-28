@@ -6,8 +6,10 @@
 2. **组织级默认社区健康文件**：本仓根部的 `SECURITY.md` / `SUPPORT.md` 等，
    会被组织内**没有自建同名文件**的仓库当作回退继承。注意这些默认文件
    **不会**出现在文件浏览器、git 历史、克隆与下载里——它们是隐形的回退。
-3. **家族公共工程文档**：[`ENGINEERING.md`](ENGINEERING.md)（跨仓公共开发纪律）与
-   [`RULES.md`](RULES.md)（编译器扩展诊断 ID 段位注册表）。
+3. **家族公共工程文档**：[`ENGINEERING.md`](ENGINEERING.md)（跨仓公共开发纪律）、
+   [`RULES.md`](RULES.md)（编译器扩展诊断 ID 段位注册表）、
+   [`docfx-template/`](docfx-template/)（文档站标准模板——样式/导航/构建/发布一站取用）、
+   [`workflow-templates/`](workflow-templates/)（组织级 Actions 模板，新建仓可直接选用）。
 
 组织内不成文的约定、仓地图与迁移台账在成员可见的 **`.github-private`**（不在此公开仓）。
 

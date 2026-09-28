@@ -1,0 +1,76 @@
+name: docs-deploy
+
+# KernLab 家族文档站标准发布管线（模板版——复制本文件到产品仓 .github/workflows/）：
+# push main（文档相关路径）→ Release 构建 + docfx build → artifact(docs-site)
+# → workflow_dispatch 触发 kernlab-dev/kernlab-docs 聚合仓 → Cloudflare Pages 自动部署
+# → 最终地址 docs.kernlab.dev/<product>/
+#
+# 使用前必改三处（搜索 <产品>）：
+#   ① 构建清单 for 循环里的项目列表（★坑 #1：metadata 逐 dll 读 XML，漏一个项目其 API 层缺失）
+#   ② paths 过滤（覆盖本产品全部文档源）
+#   ③ 末尾 dispatch 参数 product=<产品路径名>
+# 前置 secret：DOCS_SYNC_TOKEN（对 kernlab-dev/kernlab-docs 有 actions:write 的 PAT；
+# 未配置时末步显式跳过并打日志，不会假绿）。
+# 规则全文：kernlab-dev/.github-private DOC-PUBLISH.md；坑清单：docfx-template/README.md。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**/docs/**'
+      - 'src/*/COORDINATION.md'
+      - 'docs-site/**'
+      - 'README.md'
+      - 'toc.yml'
+      - '.github/workflows/docs-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install DocFX
+        run: dotnet tool install -g docfx
+
+      - name: Release build (XML doc metadata)
+        # ★ 全部发布项目逐个构建——docfx metadata 逐 dll 读同名 .xml，遗漏任一项目其 API 参考整层缺失
+        run: |
+          for proj in <项目A> <项目B>; do
+            dotnet build "src/KernLab.<产品>.$proj/KernLab.<产品>.$proj.csproj" -c Release --nologo -v q || exit 1
+          done
+
+      - name: DocFX metadata (API reference)
+        working-directory: docs-site
+        run: docfx metadata docfx.json
+
+      - name: DocFX build (site)
+        working-directory: docs-site
+        run: docfx build docfx.json
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site
+          path: docs-site/_site
+          retention-days: 7
+
+      - name: Trigger kernlab-docs 聚合部署
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_SYNC_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "DOCS_SYNC_TOKEN 未配置，跳过聚合部署（Settings → Secrets and variables → Actions 配置）"
+            exit 0
+          fi
+          gh workflow run deploy.yml -R kernlab-dev/kernlab-docs \
+            -f product=<产品路径名> -f repo=kernlab-dev/<产品仓名> -f run_id=${{ github.run_id }}

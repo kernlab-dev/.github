@@ -1,0 +1,63 @@
+{
+  // KernLab 家族 docfx 标准骨架——复制到产品仓 docs-site/docfx.json，
+  // 改三处：<产品项目清单>（metadata.files 与 workflow 构建清单一致，坑 #1）、
+  // <产品章节>（content 各层）、<产品名/仓库名>（globalMetadata）。
+  // 契约与坑详见同目录 README.md；JSON 中的 // 注释 docfx 可解析。
+  "$schema": "https://dotnet.github.io/docfx/schemas/docfx.schema.json",
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [
+            // ★ 坑 #1：此处必须列全全部发布项目的 dll——docfx metadata 逐 dll 读同名 .xml，
+            //   漏一个项目其 API 参考整层缺失且构建不报错。与 workflow 构建清单同步维护。
+            "src/<项目>.dll"
+          ]
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      // README 进站（根路径 dest: .）
+      { "src": "..", "files": ["README.md"], "dest": "." },
+
+      // ★ 每层两个映射：层内 toc.yml（左导航）+ 层 docs 目录（正文）。
+      //   章节名/路径按产品改；多层产品参照 Tier：core/runtime/products/codegen/contracts。
+      { "src": "<层目录>", "files": ["toc.yml"], "dest": "docs/<层>" },
+      { "src": "../src/<项目>/docs", "files": ["**/*.md"], "dest": "docs/<层>", "exclude": ["lab/**"] },
+
+      // ★ 坑 #2：COORDINATION 摊平短名映射（#510 判例）——dest 固定短名，
+      //   禁 src/<项目名>/ 深镜像形态（链接会 404）。短名注册表见 DOC-PUBLISH.md §5。
+      { "src": "../src/<项目>", "files": ["COORDINATION.md"], "dest": "docs/coordination/<短名>" },
+      { "src": "coordination", "files": ["toc.yml"], "dest": "docs/coordination" },
+
+      // perf 族统一子目录布局（坑 #10）：使用指南与性能文档分离
+      { "src": "../src/<项目>/docs/perf", "files": ["**/*.md"], "dest": "docs/<层>/perf" },
+
+      { "files": ["toc.yml"], "dest": "." },
+      { "files": ["index.md"], "dest": "." },
+      { "files": ["api/**/*.yml"], "dest": "." },
+      { "src": "api", "files": ["index.md"], "dest": "api" }
+    ],
+    "resource": [
+      { "src": "..", "files": ["src/**/docs/**/*.png", "src/**/docs/**/*.jpg", "src/**/docs/**/*.svg"] },
+      // 家族统一样式：固定注入 public/main.css（页面经相对路径加载——坑 #3：禁根绝对路径）
+      { "files": ["main.css"], "dest": "public" }
+    ],
+    "globalMetadata": {
+      "_appName": "<产品名>",
+      "_appTitle": "<产品名 — 一句话定位>",
+      "_appFooter": "© 2026 <a href=\"https://kernlab.dev\" target=\"_blank\" rel=\"noopener\">kernlab.dev</a> All Rights Reserved",
+      "_enableSearch": true,
+      // 指向产品公开仓（私有产品仓填公开镜像或组织门面）
+      "_gitContribute": { "repo": "https://github.com/kernlab-dev/<产品仓名>", "branch": "main" }
+      // ★ 坑 #4：不要配 _appBasePath——docfx 2.78 modern 模板下是 no-op（A/B 实测零差异），
+      //   子路径兼容完全靠全相对链接（本模板所有路径已相对）。
+    },
+    "template": ["default", "modern"],
+    "output": "_site"
+  }
+}

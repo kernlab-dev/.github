@@ -1,0 +1,6 @@
+{
+  "name": "docs-deploy",
+  "description": "文档站构建发布——docfx 生成 → 上传 artifact → 触发 kernlab-docs 聚合（docs.kernlab.dev）",
+  "iconName": "octicon-book",
+  "categories": ["documentation"]
+}

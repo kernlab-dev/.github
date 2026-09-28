@@ -1,0 +1,14 @@
+# KernLab 家族文档站顶部导航骨架——复制到 docs-site/toc.yml 后按产品改。
+# 纪律（坑 #7）：只引用确实会生成的页面；构建 TOC 警告有已知基线，新增警告必须清零。
+# 链接形态契约（坑 #2）：coordination 用摊平短名；全部相对路径（坑 #3）。
+
+- name: 首页
+  href: index.html
+- name: <章节一>          # 如 核心层/内核
+  href: docs/<层>/<入口页>.html
+- name: <章节二>          # 如 运行时/产品
+  href: docs/<层>/<入口页>.html
+- name: API 参考
+  href: api/index.html
+- name: GitHub
+  href: https://github.com/kernlab-dev/<产品仓名>
