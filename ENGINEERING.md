@@ -21,6 +21,16 @@
   本地待办跟踪——球在我方不行动 = 断 track。
 - 文件/IO 一律走 `KernLab.Tier.Core.IO`（统一高性能 IO 抽象），禁直接 BCL `System.IO` 的
   File/Directory——能力缺失提 Tier issue，禁 BCL workaround 自补。
+- **存储结构禁止手搓**（2026-09-29 判例入典）：内存/持久化存储一律消费 TierKv/TierFs——
+  介质是配置（`memory:` / `local:///路径` 四介质同权），同一份业务代码切介质不改代码。
+  Tier 数据结构已完全满足（每键 TTL / 地址版+值版 CAS 含 NX / 前缀范围扫描 / 原子批 2PC /
+  watch 游标 / LogicalAddress 乐观锁读）；业务层只写**消费适配器**，禁自管字典、自管持久化
+  文件、自建索引/Ring（判例：Claim `InMemoryClaimStore` / `InMemorySigningKeyStore` 手搓已删）。
+  **能力不满足 = 向 Tier 提 issue 排期**（如 tc-tier#523），等待期临时面必须代码标注过期时间，
+  禁长出手搓替代品。
+- **二进制布局/线协议禁止手写偏移与帧格式**：一律用源生成器标注——Loom `[BinaryLayout]` /
+  `[WireMessage]`、Tier `[KvStore]`（生成器自动埋属性，消费方零手写属性类）。底层已完成
+  源生成器支持，手算偏移 = 违规。
 - 生成器**不得引用它为之生成代码的运行时库**；生成物自足（BCL only、不依赖消费方
   `ImplicitUsings`）；模板随包以 EmbeddedResource 分发。
 - 跨仓命名空间**禁靠外层相对解析**，一律显式限定（改名时成片断链）。
@@ -74,6 +84,10 @@
 ## 6. 审查与结论纪律
 
 - **任何结论先主体验证**；子代理报告/工具扫描结果只当线索不当证据。
+- **版本结论必须实查最新**（2026-09-29 判例）：包版本以 nuget.org 实查
+  （`api.nuget.org/v3-flatcontainer/<id>/index.json`）+ 各仓 `git fetch --tags` 后的 tag 为准；
+  禁拿消费方旧钉版或本地旧源码树当结论（判例：本地 Tier 源码落后 56 提交，拿 alpha.7 旧树
+  得出「alpha.12 无佐证」错误结论；镜像/钉版滞后 ≠ 包不存在）。
 - 下"死代码/无用/可删"结论前必读类型头注释，排除：设计档案/对照实验、`[Experimental]`、
   公共 API 原语、并列双版本；**grep 无引用 ≠ 无用**。
 - **用组件前先读该组件使用文档全文与反模式表**——遇"反直觉"行为，第一假设是违反文档契约，
