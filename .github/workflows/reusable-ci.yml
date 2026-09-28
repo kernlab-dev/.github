@@ -44,6 +44,10 @@ on:
         description: '每个测试工程失败重试次数（吸收 runner 噪音；0 = 不重试）'
         type: string
         default: '0'
+      install_aot_toolchain:
+        description: 'Linux 腿安装 NativeAOT 工具链（clang/zlib——AOT 发布探针测试依赖，cell 判例）'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -64,6 +68,14 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '${{ inputs.dotnet_version }}'
+
+      - name: Install NativeAOT toolchain (Linux clang)
+        if: inputs.install_aot_toolchain && runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev
 
       - name: Build
         run: dotnet build ${{ inputs.solution }} -c ${{ inputs.build_config }} --nologo -v q
