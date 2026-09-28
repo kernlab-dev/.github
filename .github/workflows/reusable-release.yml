@@ -1,0 +1,159 @@
+name: release-reusable
+
+# 家族共享发布管线（workflow_call——各仓只留调用桩，逻辑单源收口于此）。
+# 发布门（唯一）：仅 tag 推送（github.event_name == 'push'）才发布——
+# dispatch 空跑只 build/pack/上传 artifact（判例：步骤级 exit 0 不结束 job，旧门因此实发过 nuget）。
+# NuGet Trusted Publishing 登记：OIDC 声明绑定 caller 仓（owner=kernlab-dev / repository=<caller> /
+# workflow=本文件路径）——新仓接入前须在 nuget.org 核对/新增登记，否则 push 401。
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: '包版本（dispatch 空跑显式给；tag 触发自动取 tag 名）'
+        type: string
+        required: false
+        default: ''
+      run_tests:
+        description: '正式线：全解决方案构建 + 全部测试'
+        type: boolean
+        required: false
+        default: false
+      solution:
+        description: '全量构建的解决方案路径（空 = 跳过 sln 级构建）'
+        type: string
+        required: false
+        default: ''
+      test_projects:
+        description: '测试工程（glob 或空格分隔清单；空 = 用 solution 本身做测试入口）'
+        type: string
+        required: false
+        default: 'tests/*/*.csproj'
+      test_retries:
+        description: '每个测试工程的重试次数（0 = 不重试）'
+        type: string
+        required: false
+        default: '0'
+      pack_projects:
+        description: '显式打包清单（空格分隔 csproj 路径；空 = 扫 IsPackable=true）'
+        type: string
+        required: false
+        default: ''
+      skip_pack:
+        description: '尚未立项包工程的仓（首包前空跑形态）——跳过打包/上传/发布'
+        type: boolean
+        required: false
+        default: false
+      dotnet_build:
+        description: '构建/测试 SDK（精确版本——通配会被 latestMajor 滚上未知大版本）'
+        type: string
+        required: false
+        default: '8.0.422'
+      dotnet_publish:
+        description: '发布面 SDK（nuget OIDC 需 9.0.2xx+）'
+        type: string
+        required: false
+        default: '9.0.x'
+      pack_root:
+        description: '扫描 IsPackable=true 工程的目录'
+        type: string
+        required: false
+        default: 'src'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '${{ inputs.dotnet_build }}'
+
+      - name: Build and test (formal lane)
+        if: inputs.run_tests
+        env:
+          SOLUTION: '${{ inputs.solution }}'
+          TEST_PROJECTS: '${{ inputs.test_projects }}'
+          RETRIES: '${{ inputs.test_retries }}'
+        shell: bash
+        run: |
+          set -e
+          if [ -n "$SOLUTION" ]; then
+            dotnet build "$SOLUTION" -c Release --nologo
+          fi
+          NOBUILD=''
+          [ -n "$SOLUTION" ] && NOBUILD='--no-build'
+          ATTEMPTS=$((RETRIES + 1))
+          if [ -n "$TEST_PROJECTS" ]; then
+            for t in $TEST_PROJECTS; do
+              ok=0
+              for i in $(seq 1 $ATTEMPTS); do
+                if dotnet test "$t" -c Release $NOBUILD --nologo; then ok=1; break; fi
+                [ "$i" -lt "$ATTEMPTS" ] && sleep 10
+              done
+              [ "$ok" -eq 1 ] || exit 1
+            done
+          elif [ -n "$SOLUTION" ]; then
+            dotnet test "$SOLUTION" -c Release --no-build --nologo
+          fi
+
+      - name: Pack
+        if: inputs.skip_pack != true
+        env:
+          VERSION_INPUT: '${{ inputs.version }}'
+        shell: bash
+        run: |
+          set -e
+          VERSION=${VERSION_INPUT:-${GITHUB_REF_NAME#preview-v}}
+          VERSION=${VERSION#v}
+          EXPLICIT='${{ inputs.pack_projects }}'
+          if [ -n "$EXPLICIT" ]; then
+            PROJECTS=$(printf '%s\n' "$EXPLICIT" | tr ' ' '\n')
+          else
+            PROJECTS=$(grep -rls "<IsPackable>true</IsPackable>" "${{ inputs.pack_root }}" --include=*.csproj || true)
+          fi
+          if [ -z "$PROJECTS" ]; then
+            echo "::error::没有可打包项目（${{ inputs.pack_root }} 下无 IsPackable=true 的 csproj）——先立项包工程再发版"
+            exit 1
+          fi
+          echo "$PROJECTS" | while read -r proj; do
+            dotnet pack "$proj" -c Release --nologo -o artifacts -p:Version=$VERSION
+          done
+
+      - name: Upload packages
+        if: inputs.skip_pack != true
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts/*.nupkg
+
+  publish:
+    needs: build
+    # ★ 发布门（job 级）：仅 tag 推送发布；dispatch 空跑整 job 跳过
+    if: github.event_name == 'push' && inputs.skip_pack != true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      # 各仓 global.json 钉的是构建/测试面 SDK；发布面（nuget push）需 9.0.2xx+ OIDC——移除钉
+      - run: rm -f global.json
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '${{ inputs.dotnet_publish }}'
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nupkg
+          path: artifacts
+
+      - name: NuGet login (OIDC to temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to nuget.org
+        run: dotnet nuget push artifacts/*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
