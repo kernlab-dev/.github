@@ -10,11 +10,12 @@
    [`RULES.md`](RULES.md)（编译器扩展诊断 ID 段位注册表）、
    [`docfx-template/`](docfx-template/)（文档站标准模板——样式/导航/构建/发布一站取用）。
 
-4. **家族共享流水线（逻辑单源）**：[`.github/workflows/`](.github/workflows/) 下三条 reusable——
+4. **家族共享流水线（逻辑单源）**：[`.github/workflows/`](.github/workflows/) 下两条 reusable——
    `reusable-ci`（CI 门禁：默认 GitHub 托管机，`runners_matrix` 参数切自建 runner 组合）、
-   `reusable-release`（NuGet 发布：正式线全量测试/preview 免门禁）、
    `reusable-docs-deploy`（文档站构建 → kernlab-docs 聚合 → docs.kernlab.dev）。
-   各仓只留十行调用桩；新仓从 [`workflow-templates/`](workflow-templates/)（Actions 页可选）
+   各仓只留调用桩；新仓从 [`workflow-templates/`](workflow-templates/)（Actions 页可选）
+   ——**发布不入此列**：家族纪律 §9 发布不可集中（nuget.org Trusted Publishing 按 OIDC
+   三要素逐字校验 workflow 身份，reusable 指向载体仓将被拒），发布由各仓自带 `release.yml`。
    取 `ci` / `docs-deploy` 桩。注意：本仓 workflows **不会自动跑在别的仓**——
    事件只触发事件所在仓的 workflow，共享靠各仓显式 `uses:` 调用。
 
