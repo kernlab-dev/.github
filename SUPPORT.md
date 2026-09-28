@@ -4,10 +4,10 @@
 
 | 类型 | 去处 |
 |---|---|
-| 用法、设计、架构问题 | 对应仓库的 **Discussions** |
-| 缺陷（可复现） | 对应仓库的 **Issues**——请附包版本、目标框架（TFM）、平台与最小复现 |
-| 功能请求 | 对应仓库的 **Issues** 或 Discussions |
-| 安全漏洞 | **不要开公开 Issue**——见 [SECURITY.md](SECURITY.md) |
+| 使用交流、问答、方案讨论 | **[Discussions](https://github.com/kernlab-dev/.github/discussions)**（本仓——组织社区枢纽；产品仓为私有，外部讨论统一在此） |
+| 缺陷（可复现） | **[Discussions](https://github.com/kernlab-dev/.github/discussions)** 提交——确认后由维护者转内部工单跟踪（请附包版本、目标框架 TFM、平台与最小复现） |
+| 功能请求 | Discussions 提案 |
+| 安全漏洞 | **不要开公开 Discussion/Issue**——见 [SECURITY.md](SECURITY.md) |
 
 ## 不接受
 
