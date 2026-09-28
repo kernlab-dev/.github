@@ -44,6 +44,11 @@ on:
         type: boolean
         required: false
         default: false
+      skip_publish:
+        description: '发布腿留在各仓自己的 release.yml 时置 true（nuget Trusted Publishing 的 OIDC 绑定 caller workflow——reusable 载体仓身份必 401，家族纪律 §8）'
+        type: boolean
+        required: false
+        default: false
       dotnet_build:
         description: '构建/测试 SDK（精确版本——通配会被 latestMajor 滚上未知大版本）'
         type: string
@@ -130,8 +135,9 @@ jobs:
 
   publish:
     needs: build
-    # ★ 发布门（job 级）：仅 tag 推送发布；dispatch 空跑整 job 跳过
-    if: github.event_name == 'push' && inputs.skip_pack != true
+    # ★ 发布门（job 级）：仅 tag 推送发布；dispatch 空跑整 job 跳过；
+    #   skip_publish = 发布腿留在调用仓（Trusted Publishing 按 caller workflow 绑定——见输入说明）
+    if: github.event_name == 'push' && inputs.skip_pack != true && inputs.skip_publish != true
     runs-on: ubuntu-latest
     permissions:
       contents: read
