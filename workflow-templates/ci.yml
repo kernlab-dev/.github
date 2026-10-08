@@ -30,3 +30,7 @@ jobs:
       build_config: Release
       test_projects: 'tests/*/*.csproj'
       test_retries: '1'                  # 时序敏感套件重试吸收 runner 噪音
+      # 卫星 UI 预构建（kernlab-dev/.github#1——Control.UI 模式卫星：dotnet 门禁前 Node 构建，内嵌资产真跑构建态）：
+      # ui_project_path: src/ui
+      # ui_node_version: '20'            # 缺省 20
+      # ui_build_command: 'run build'    # 缺省 run build（家族栈自带 vue-tsc 类型门）

@@ -6,7 +6,8 @@ name: ci-reusable
 #   ② 自建独立 CI 机器——runners_matrix 传标签组合（JSON 数组，如 '["win-ci","pve-ci"]'），
 #      配 use_setup_dotnet: false（自建机预装 SDK；中国网络下 setup-dotnet 基线 runtime
 #      下载随机卡死判例——自建机不走该步骤，SDK 升级归 runner 维护）。
-# 扩展点：重并发组拆分、分项目特殊重试等仓专属形态，在调用桩侧加 job 补充（参照 kernlab-tier ci.yml）。
+# 扩展点：重并发组拆分、分项目特殊重试等仓专属形态，在调用桩侧加 job 补充（参照 kernlab-tier ci.yml）；
+# 卫星 UI 预构建走 ui_project_path 输入（kernlab-dev/.github#1——dotnet 门禁前 Node 构建，内嵌资产真跑）。
 # 调用桩示例：workflow-templates/ci.yml。
 
 on:
@@ -48,6 +49,18 @@ on:
         description: 'Linux 腿安装 NativeAOT 工具链（clang/zlib——AOT 发布探针测试依赖，cell 判例）'
         type: boolean
         default: false
+      ui_project_path:
+        description: '卫星 UI 工程路径（相对仓根，如 src/ui；空 = 无 UI 预构建——缺省关）'
+        type: string
+        default: ''
+      ui_node_version:
+        description: 'Node 版本（UI 预构建用）'
+        type: string
+        default: '20'
+      ui_build_command:
+        description: 'npm 构建命令（npm -C <ui_project_path> 后执行；家族栈 build 自带 vue-tsc 类型门）'
+        type: string
+        default: 'run build'
 
 permissions:
   contents: read
@@ -76,6 +89,22 @@ jobs:
           set -e
           sudo apt-get update
           sudo apt-get install -y clang zlib1g-dev
+
+      - name: Setup Node（卫星 UI 预构建）
+        if: inputs.ui_project_path != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '${{ inputs.ui_node_version }}'
+          cache: npm
+          cache-dependency-path: '${{ inputs.ui_project_path }}/package-lock.json'
+
+      - name: UI 预构建（npm ci + 构建——dist 在场，卫星程序集构建期内嵌、伺服测试真跑构建态）
+        if: inputs.ui_project_path != ''
+        shell: bash
+        run: |
+          set -e
+          npm -C ${{ inputs.ui_project_path }} ci
+          npm -C ${{ inputs.ui_project_path }} ${{ inputs.ui_build_command }}
 
       - name: Build
         run: dotnet build ${{ inputs.solution }} -c ${{ inputs.build_config }} --nologo -v q
