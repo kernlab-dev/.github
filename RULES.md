@@ -18,7 +18,7 @@
 
 | 前缀 | 产生方 | 段位 | 备注 |
 |---|---|---|---|
-| `KLSG` | `KernLab.Loom.*`（家族编译期层） | 001-099 生成器／130-139 规则分析器 | 通用面，全家族复用 |
+| `KLSG` | `KernLab.Loom.*`（家族编译期层） | 001-099 生成器／100-144 各面增量／130-139 规则分析器／200-259 Ef 扩展 | 通用面，全家族复用 |
 | `KTSG` | `KernLab.Tier.CodeGen(.Analyzers)` | 010-014 / 020-023 / 040-044 生成器／120-122 分析器 | Tier 域专属 |
 | `COH` | `KernLab.Cohort.CodeGen` | 001-005 | Cohort 自有（品牌中性；后续如按 `<K><产品码>SG` 统一可改 `KCSG`） |
 
@@ -35,6 +35,10 @@
 | KLSG050-053 | `KernLab.Loom.Wire` | `[WireMessage]` 标注用法／成员形态／tag 冲突／生成失败 |
 | KLSG054-061 | `KernLab.Loom.Cli` | 命令路径冲突／非法命令名／参数未标注／不可绑定形态／GET 带体／标注宿主非法／保留前缀／嵌套组未接线 |
 | KLSG130-139 | `KernLab.Loom.Analyzers` | 分层引用族（130-133）／禁用模式族（134-138）／配置合法性 fail-fast（139） |
+| KLSG100-101 | `KernLab.Loom.Display` | `[EnumDisplay]` 解析器（100 标注用法／101 生成失败） |
+| KLSG110-112 | `KernLab.Loom.Query` | `[Filterable]` 字段目录（110 标注用法／111 形态／112 生成失败） |
+| KLSG140-144 | `KernLab.Loom.Validation` | T1 校验段（140 标注用法／141-143 形态族／144 生成失败） |
+| KLSG200-259 | `KernLab.Loom.Ef` | **EF 扩展段（预留 60 位，2026-10-10 迁段判例：原 120-144 与 Analyzers/Validation 三方撞号）**——已用 200-224：实体声明族（200-208/210）/ 逃逸舱双闸（211/214）/ 投影族（216-219）/ 表名（220）/ 监听（221）/ 动态视图（222-223）/ 壳声明（224） |
 
 `KernLab.Loom.Analyzers` 配置键：`loom_layer.forbidden_reference`、`loom_layer.zero_internal_refs`、`loom_layer.internal_assembly_prefix`、`loom_layer.allowed_reference`、`loom_layer.namespace_prefix`、`loom_layer.allowed_framework_prefix`、`loom_forbidden.pack`（`reflection`／`sync_over_async`／`fire_and_forget`／`bare_threads`／`hotpath_discipline`）。
 
