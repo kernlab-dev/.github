@@ -33,7 +33,7 @@
 | KLSG001-006 | `KernLab.Loom.Layout` | `[BinaryLayout]` 标注用法／字段形态／布局／校验声明／嵌套／生成失败 |
 | KLSG045-048 | `KernLab.Loom.Wire` | `[WireArray]` 标注用法／元素类型／声明形态／生成失败 |
 | KLSG050-053 | `KernLab.Loom.Wire` | `[WireMessage]` 标注用法／成员形态／tag 冲突／生成失败 |
-| KLSG054-061 | `KernLab.Loom.Cli` | 命令路径冲突／非法命令名／参数未标注／不可绑定形态／GET 带体／标注宿主非法／保留前缀／嵌套组未接线 |
+| KLSG054-065 | `KernLab.Loom.Cli` | 命令路径冲突／非法命令名／参数未标注／不可绑定形态／GET 带体／标注宿主非法／保留前缀／嵌套组未接线／参数类型不在绑定支持集／`loom_cli.*` 配置键非法（fail-fast 回退缺省）／描述资源形态不完整（DescriptionKey 与 ResourceType 只给其一）／ResourceType 缺可访问 ResourceManager（public 或同程序集 internal——帮助本地化回退链） |
 | KLSG130-139 | `KernLab.Loom.Analyzers` | 分层引用族（130-133）／禁用模式族（134-138）／配置合法性 fail-fast（139） |
 | KLSG100-101 | `KernLab.Loom.Display` | `[EnumDisplay]` 解析器（100 标注用法／101 生成失败） |
 | KLSG110-112 | `KernLab.Loom.Query` | `[Filterable]` 字段目录（110 标注用法／111 形态／112 生成失败） |
