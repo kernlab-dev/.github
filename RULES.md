@@ -46,8 +46,8 @@
 
 | ID 段 | 包 | 规则 |
 |---|---|---|
-| KLSG070-079 | `KernLab.Loom.Endpoints` | 070 契约缺标记接口／071 路由重复／072 契约无端点配对（消费者工程可关）／073 切面未实现 IAspect（此四条自 Cohort `COH001-005` 迁入）／074 契约结果类型与端点返回类型不一致／075 端点方法形态非法／076 route 路径参数与契约成员不匹配／077 `[FromLastEventId]` 用于非 SSE 端点或参数类型非 string／**078 `LoomEndpoints*` MSBuild 配置键非法（原预留槽改配——配置错误绝静默）**；079 预留 |
-| KLSG080-099 | `KernLab.Loom.Di` | 080 captive dependency／081 依赖未登记／082-083 多实现无 Default·多 Default／084 `[SingleImplementation]` 被违反／085 标注误用／086 严格档注册面越界／087 登记未消费（W）／088 依赖环／089 Transient 实现 IDisposable（W）／090 Singleton 注入 IServiceProvider（W）／091 约定表违规（W）／**092 `loom_di.*` 配置键非法（原预留槽改配——配置错误绝静默）**；093-099 预留 |
+| KLSG070-079 | `KernLab.Loom.Endpoints` | 070 契约缺标记接口／071 路由重复／072 契约无端点配对（消费者工程可关）／073 切面未实现 IAspect（此四条自 Cohort `COH001-005` 迁入）／074 契约结果类型与端点返回类型不一致／075 端点方法形态非法／076 route 路径参数与契约成员不匹配／077 `[FromLastEventId]` 用于非 SSE 端点或参数类型非 string／**078 `LoomEndpoints*` MSBuild 配置键非法（原预留槽改配——配置错误绝静默）**；079 切面声明不可解析（派生切面特性无法确定切面类型/实参非编译期常量——切面参数化配套）；**240 序列化底座不支持类型（越段实况：实配于 Ef 预留块 200-259 内——Endpoints 无空段可取的既成选择，#62 入档；Ef 增量触及时双方对齐）** |
+| KLSG080-099 | `KernLab.Loom.Di` | 080 captive dependency／081 依赖未登记／082-083 多实现无 Default·多 Default／084 `[SingleImplementation]` 被违反／085 标注误用／086 严格档注册面越界／087 登记未消费（W）／088 依赖环／089 Transient 实现 IDisposable（W）／090 Singleton 注入 IServiceProvider（W）／091 约定表违规（W）／**092 `loom_di.*` 配置键非法（原预留槽改配——配置错误绝静默）**；093 装饰器构造形态非法（装饰器特性无法解析接口/形态不匹配——def8596 装饰器面）；094-099 预留 |
 
 `KernLab.Loom.Endpoints` 配置键（MSBuild 属性，消费方 csproj 直设）：`LoomEndpointsNamespace`、`LoomEndpointsClassName`、`LoomEndpointsConsumerOnly`、`LoomEndpointsServiceLifetime`。
 `KernLab.Loom.Di` 配置键（analyzer config——**必须落 `.globalconfig` 或 `.editorconfig` 节内**，无节键静默失效判例）：`loom_di.registration_face`（`interop`｜`declarative`）、`loom_di.unused_registration`（`off`｜`warn`）、`loom_di.lifetime_conventions`（箭头规则表，语法同 `loom_layer.*`）。
