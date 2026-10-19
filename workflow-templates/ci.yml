@@ -2,6 +2,7 @@ name: CI
 
 # KernLab 家族标准 CI 调用桩（新建仓从 Actions 模板选用后按需改）：
 # 逻辑单源在 kernlab-dev/.github 的 reusable-ci——本文件只声明触发与参数。
+# 分支模型：main（发布线）+ dev（集成线）；PR 门禁另配 workflow-templates/policy.yml。
 #
 # Runner 双形态：
 #   ① 默认 GitHub 托管机器（下面现状）：零基础设施，push 即跑；
@@ -12,10 +13,14 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main]
   pull_request:
     branches: [main, dev]
   workflow_dispatch:   # main/dev 之外的功能分支走手动：gh workflow run ci --ref <branch>
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

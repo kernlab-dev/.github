@@ -1,0 +1,6 @@
+{
+  "name": "Policy",
+  "description": "分支/版本策略校验——PR 来源矩阵、Tag↔props/CHANGELOG/分支（家族 reusable 单源）",
+  "iconName": "octicon-shield",
+  "categories": ["continuous-integration"]
+}

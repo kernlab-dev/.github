@@ -1,0 +1,21 @@
+name: Policy
+
+# 统一分支/版本策略校验（新建仓从 Actions 模板选用后改 version_project）：
+#   PR：来源分支 ↔ 目标分支（main 只收 dev/hotfix；dev 只收短分支/main 回灌）
+#   Tag：在 release.yml 的 policy job 里复用同一 reusable（本文件只跑 PR）。
+on:
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    uses: kernlab-dev/.github/.github/workflows/reusable-policy-check.yml@main
+    with:
+      # ★ 换成本仓继承 Directory.Build.props 版本的代表性 csproj
+      version_project: 'src/Your.Product/Your.Product.csproj'
+      changelog_file: 'CHANGELOG.md'
+      dotnet_version: '8.0.422'
