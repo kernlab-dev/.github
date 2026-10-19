@@ -34,13 +34,13 @@
 | KLSG045-048 | `KernLab.Loom.Wire` | `[WireArray]` 标注用法／元素类型／声明形态／生成失败 |
 | KLSG050-053 | `KernLab.Loom.Wire` | `[WireMessage]` 标注用法／成员形态／tag 冲突／生成失败 |
 | KLSG054-065 | `KernLab.Loom.Cli` | 命令路径冲突／非法命令名／参数未标注／不可绑定形态／GET 带体／标注宿主非法／保留前缀／嵌套组未接线／参数类型不在绑定支持集／`loom_cli.*` 配置键非法（fail-fast 回退缺省）／描述资源形态不完整（DescriptionKey 与 ResourceType 只给其一）／ResourceType 缺可访问 ResourceManager（public 或同程序集 internal——帮助本地化回退链） |
-| KLSG130-139 | `KernLab.Loom.Analyzers` | 分层引用族（130-133）／禁用模式族（134-138）／配置合法性 fail-fast（139） |
+| KLSG130-139, 147-154 | `KernLab.Loom.Analyzers` | 分层引用族（130-133）／禁用模式族（134-138 + 152 零拷贝丢失）／配置合法性 fail-fast（139）／**契约真值表族（147-151——[StringContract] 常量串 DSL 五级诊断，TierFsSpecAnalyzer 通用化下沉判例）**／迁移指引族（153-154——Obsolete 过时面家族定向提示） |
 | KLSG100-101 | `KernLab.Loom.Display` | `[EnumDisplay]` 解析器（100 标注用法／101 生成失败） |
 | KLSG110-112 | `KernLab.Loom.Query` | `[Filterable]` 字段目录（110 标注用法／111 形态／112 生成失败） |
-| KLSG140-144 | `KernLab.Loom.Validation` | T1 校验段（140 标注用法／141-143 形态族／144 生成失败） |
+| KLSG140-146 | `KernLab.Loom.Validation` | T1 校验段（140 标注用法／141-143 形态族／144 生成失败／145-146 增量） |
 | KLSG200-259 | `KernLab.Loom.Ef` | **EF 扩展段（预留 60 位，2026-10-10 迁段判例：原 120-144 与 Analyzers/Validation 三方撞号）**——已用 200-224：实体声明族（200-208/210）/ 逃逸舱双闸（211/214）/ 投影族（216-219）/ 表名（220）/ 监听（221）/ 动态视图（222-223）/ 壳声明（224） |
 
-`KernLab.Loom.Analyzers` 配置键：`loom_layer.forbidden_reference`、`loom_layer.zero_internal_refs`、`loom_layer.internal_assembly_prefix`、`loom_layer.allowed_reference`、`loom_layer.namespace_prefix`、`loom_layer.allowed_framework_prefix`、`loom_forbidden.pack`（`reflection`／`sync_over_async`／`fire_and_forget`／`bare_threads`／`hotpath_discipline`）。
+`KernLab.Loom.Analyzers` 配置键：`loom_layer.forbidden_reference`、`loom_layer.zero_internal_refs`、`loom_layer.internal_assembly_prefix`、`loom_layer.allowed_reference`、`loom_layer.namespace_prefix`、`loom_layer.allowed_framework_prefix`、`loom_forbidden.pack`（`reflection`／`sync_over_async`／`fire_and_forget`／`bare_threads`／`hotpath_discipline`／`zero_copy_loss`）。契约真值表族无配置键——`[StringContract]` 标注驱动。
 
 **两面规则（已落地——设计稿 [endpoints-di-design](https://github.com/kernlab-dev/kernlab-loom/blob/main/docs/design/endpoints-di-design.md)）**
 
@@ -59,7 +59,7 @@
 | KTSG010-014 | `KernLab.Tier.CodeGen`（TierFsGenerator） | MediumOptions nature／verb、NetworkProtocol key、SpecParam 形态／介质 |
 | KTSG020-023 | `KernLab.Tier.CodeGen`（RingKey／KvStoreGenerator） | RingKey 非 unmanaged、KvStore key／value／formatter |
 | KTSG040-044 | `KernLab.Tier.CodeGen`（ConstantRegistryGenerator） | 重复值／非法 zone 声明／越界／非 partial／值域歧义 |
-| KTSG120-122 | `KernLab.Tier.CodeGen.Analyzers` | spec scheme 非法／参数名未知／参数 × 介质违规 |
+| ~~KTSG120-122~~ | ~~`KernLab.Tier.CodeGen.Analyzers`~~ | **已退役（2026-10-19，kernlab-loom #157 下沉判例）**——契约真值表族通用化至 `KernLab.Loom.Analyzers` KLSG147-149（TierFsSpecAnalyzer 已删除，Tier 消费 Loom 分析器） |
 
 Tier 域侧不读配置键（全部 Error 默认，声明即报）。
 
