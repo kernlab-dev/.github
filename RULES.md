@@ -59,7 +59,7 @@
 | KTSG010-014 | `KernLab.Tier.CodeGen`（TierFsGenerator） | MediumOptions nature／verb、NetworkProtocol key、SpecParam 形态／介质 |
 | KTSG020-023 | `KernLab.Tier.CodeGen`（RingKey／KvStoreGenerator） | RingKey 非 unmanaged、KvStore key／value／formatter |
 | KTSG040-044 | `KernLab.Tier.CodeGen`（ConstantRegistryGenerator） | 重复值／非法 zone 声明／越界／非 partial／值域歧义 |
-| KTSG120-122 | `KernLab.Tier.CodeGen.Analyzers` | spec scheme 非法／参数名未知／参数 × 介质违规 |
+| ~~KTSG120-122~~ | ~~`KernLab.Tier.CodeGen.Analyzers`~~ | **已退役（2026-10-19，kernlab-loom #157 下沉判例）**——契约真值表族通用化至 `KernLab.Loom.Analyzers` KLSG147-149（TierFsSpecAnalyzer 已删除，Tier 消费 Loom 分析器） |
 
 Tier 域侧不读配置键（全部 Error 默认，声明即报）。
 
