@@ -72,6 +72,7 @@ Tier 域侧不读配置键（全部 Error 默认，声明即报）。
 3. **受控豁免用 `#pragma warning disable <ID>` 并注明理由**（治理原语内核的同步等待、受控丢弃属此类）。**改名时必须同步 pragma 里的 ID**——否则豁免静默失效、规则重新报警（Tier 判例：22 个文件的 pragma 未随改名更新）。
 4. **新增规则两步**：①产生包内 `AnalyzerReleases.{Shipped,Unshipped}.md` 登记（RS2008 门；RS2007 非确定性误报可带理由豁免）；②本页补一行并声明段位。
 5. **登记对账自动护栏**：`KernLab.Loom` 测试门校验"源码实际 ID ↔ 登记表"一一对应、跨面不撞号、ID 必为 `KLSG`+三位数字（判例：Loom 早期四份登记被覆盖回 Tier 内容、Cli 段格式化笔误出过 `KLSG0554`）。产品仓域专属诊断建议照建同款门。
+6. **源文件组织与行数门（Loom 判例，#160——建议各仓照建）**：生成器统一四相组织（管线入口／Model／Rules／Emit）并按相拆 partial；新源文件 ≤500 行，存量 >800 行登记 allowlist 并排期拆分（只减不增）。机械门：`SourceOrganizationGateTests`（新文件超限即红、allowlist 未收口即红）。规范：[Loom 源文件组织规范](https://github.com/kernlab-dev/kernlab-loom/blob/dev/docs/dev/source-organization.md)。
 
 ## 相关
 
