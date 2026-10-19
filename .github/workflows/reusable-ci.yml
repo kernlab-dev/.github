@@ -75,6 +75,9 @@ permissions:
 
 jobs:
   ci:
+    # 非 main 分支 CI 单 job 硬上限 30 分钟（BRANCHING.md §6.1）——
+    # 超过 30 分钟的验证必须拆分/移出 PR（AOT/长稳/真云端点只在 main/nightly/manual）。
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       # matrix 须为对象（维度名 → 值数组）——fromJSON 直接回数组会被 workflow 校验拒收

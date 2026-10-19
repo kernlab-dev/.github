@@ -27,6 +27,8 @@ permissions:
 
 jobs:
   ci:
+    # 非 main 分支 CI 单 job 硬上限 30 分钟（BRANCHING.md §6.1）
+    timeout-minutes: 30
     uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
     with:
       runner: ubuntu-latest              # GitHub 托管单腿
