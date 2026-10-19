@@ -115,11 +115,15 @@
 
 ## 9. 发布纪律
 
+- 对外版本与兼容性承诺见 [`VERSIONING.md`](VERSIONING.md)；内部分支模型与发布操作在成员仓
+  `.github-private` 的 `BRANCHING.md` / `RELEASE.md`，公开面不展开。
+- 长期分支统一为 `main`（发布线）+ `dev`（集成线）；预发布 Tag 打 `dev`，GA Tag 打 `main`。
 - 发布由**各仓自己的** `release.yml` 执行：nuget.org Trusted Publishing 校验 OIDC workflow 身份，
   要求 owner/repository/workflow **逐字一致**——reusable workflow 会指向载体仓而被拒，不可集中。
-- 可集中化的是 **CI**（build/test 门禁）：放本仓的 reusable workflow / workflow-templates。
+- 可集中化的是 **CI**（build/test 门禁）与 **Policy**（Tag/版本/分支校验）：
+  放本仓的 reusable workflow / workflow-templates。
 - 发布腿跑 GitHub-hosted（`windows-latest`）；自建 runner 只跑测试腿。
-- preview 线免门禁、正式线全量测试。
+- 预发布线免全量测试、GA 线全量测试。
 - 包元数据 `PackageProjectUrl` / `RepositoryUrl` **随包发出且已发布版本不可改**——域名/组织类
   迁移必须在下次发版前落地。
 

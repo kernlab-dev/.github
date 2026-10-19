@@ -45,6 +45,14 @@ on:
         description: '每个测试工程失败重试次数（吸收 runner 噪音；0 = 不重试）'
         type: string
         default: '0'
+      test_solution:
+        description: 'true = 对整个 solution 跑一次 dotnet test（大仓 vstest 一次成型）；false = 逐 test_projects'
+        type: boolean
+        default: false
+      test_filter:
+        description: 'dotnet test 过滤表达式（空 = 不过滤）'
+        type: string
+        default: ''
       install_aot_toolchain:
         description: 'Linux 腿安装 NativeAOT 工具链（clang/zlib——AOT 发布探针测试依赖，cell 判例）'
         type: boolean
@@ -109,23 +117,45 @@ jobs:
       - name: Build
         run: dotnet build ${{ inputs.solution }} -c ${{ inputs.build_config }} --nologo -v q
 
-      - name: Test（逐工程执行 + 失败重试）
-        if: inputs.test_projects != ''
+      - name: Test（solution 一次成型 / 逐工程，均支持重试与过滤）
+        if: inputs.test_solution || inputs.test_projects != ''
         shell: bash
+        env:
+          BUILD_CONFIG: ${{ inputs.build_config }}
+          TEST_SOLUTION_MODE: ${{ inputs.test_solution }}
+          TEST_SOLUTION: ${{ inputs.solution }}
+          TEST_PROJECTS: ${{ inputs.test_projects }}
+          TEST_FILTER: ${{ inputs.test_filter }}
+          RETRIES: ${{ inputs.test_retries }}
         run: |
-          retries=${{ inputs.test_retries }}
-          fail=0
-          for proj in ${{ inputs.test_projects }}; do
-            [ -e "$proj" ] || continue
+          set -e
+          test_once() {
+            if [ -n "$TEST_FILTER" ]; then
+              dotnet test "$1" -c "$BUILD_CONFIG" --no-build --nologo --filter "$TEST_FILTER"
+            else
+              dotnet test "$1" -c "$BUILD_CONFIG" --no-build --nologo
+            fi
+          }
+          run_with_retry() {
+            target="$1"
             n=0
-            until dotnet test "$proj" -c ${{ inputs.build_config }} --no-build --nologo; do
+            until test_once "$target"; do
               n=$((n+1))
-              if [ "$n" -gt "$retries" ]; then
-                echo "::error::$proj 重试 $retries 次后仍红"
-                fail=1
-                break
+              if [ "$n" -gt "$RETRIES" ]; then
+                echo "::error::$target 重试 $RETRIES 次后仍红"
+                return 1
               fi
-              echo "::warning::$proj 第 $n 次失败，重试（吸收 runner 噪音）"
+              echo "::warning::$target 第 $n 次失败，重试（吸收 runner 噪音）"
             done
-          done
-          exit $fail
+          }
+          if [ "$TEST_SOLUTION_MODE" = "true" ]; then
+            [ -n "$TEST_SOLUTION" ] || { echo "::error::test_solution=true 需要 solution"; exit 1; }
+            run_with_retry "$TEST_SOLUTION"
+          else
+            fail=0
+            for proj in $TEST_PROJECTS; do
+              [ -e "$proj" ] || continue
+              run_with_retry "$proj" || fail=1
+            done
+            exit $fail
+          fi
