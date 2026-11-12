@@ -1,0 +1,6 @@
+{
+  "name": "Gate",
+  "description": "单入口门禁——强校验+分诊+docs快速通道+完整CI（组织单源；扩展/发布/文档站按需启用）",
+  "iconName": "octicon-gear",
+  "categories": ["continuous-integration"]
+}
