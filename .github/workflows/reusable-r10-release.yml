@@ -146,6 +146,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}   # 双模开关：在场=API key 模式，空=OIDC 模式
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       # 各仓 global.json 钉的是构建/测试面 SDK；发布面（nuget push）需 9.0.2xx+ OIDC——移除钉
@@ -164,20 +166,22 @@ jobs:
       #   名下且 Active——kernlab-gate 政策判例：字段/激活/账号三者全对仍 401 no-matching 的
       #   排障实录见 CI-GATE §5）。推送统一 --skip-duplicate，重跑幂等。
       - name: NuGet login (OIDC to temp API key) — API key 缺席时
-        if: secrets.NUGET_API_KEY == ''
+        if: env.NUGET_API_KEY == ''
         uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Push to nuget.org（API key 模式）
-        if: secrets.NUGET_API_KEY != ''
+        if: env.NUGET_API_KEY != ''
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
-          dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-          dotnet nuget push "artifacts/*.snupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push "artifacts/*.snupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: Push to nuget.org（OIDC 模式）
-        if: secrets.NUGET_API_KEY == ''
+        if: env.NUGET_API_KEY == ''
         run: |
           dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           dotnet nuget push "artifacts/*.snupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
