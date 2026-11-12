@@ -1,4 +1,4 @@
-name: docs-check-reusable
+name: v30-docs
 
 # docs 快速通道质量门——组织通用段（workflow_call，BRANCHING.md §6.2）。
 # 检查面：本次 PR 新增/修改的 .md/.mdx 中，站内相对链接的目标文件必须存在——

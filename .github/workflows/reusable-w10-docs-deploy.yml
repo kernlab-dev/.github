@@ -1,4 +1,4 @@
-name: docs-deploy-reusable
+name: w10-docs-deploy
 
 # 家族共享文档站发布管线（workflow_call——各仓只留触发桩，逻辑单源收口于此）。
 # 链路：Release 构建（取 dll 旁 XML 注释）→ docfx metadata/build → artifact(docs-site)

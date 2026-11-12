@@ -1,4 +1,4 @@
-name: ci-reusable
+name: v10-ci
 
 # 家族共享 CI 管线（workflow_call——各仓只留调用桩，逻辑单源收口于此）。
 # Runner 双形态：

@@ -1,4 +1,4 @@
-name: policy-check-reusable
+name: e10-policy
 
 # 家族统一策略校验（workflow_call）：
 #   PR：来源分支 ↔ 目标分支（main 只收 dev/hotfix；dev 只收短分支/main 回灌）

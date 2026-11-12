@@ -1,4 +1,4 @@
-name: release-reusable
+name: r10-release
 
 # 家族共享发布管线（workflow_call——各仓只留调用桩，逻辑单源收口于此）。
 # 发布门（唯一）：仅 tag 推送（github.event_name == 'push'）才发布——

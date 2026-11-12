@@ -1,4 +1,4 @@
-name: docs-merge-reusable
+name: m10-docs-merge
 
 # docs 快速通道终段（workflow_call，BRANCHING.md §6.2）：竞态复核 + squash 自动合并 + 删临时分支。
 # 合并身份 = DOCS_MERGE_PAT（fine-grained PAT：Contents RW + Pull requests RW，服务号账号）——
