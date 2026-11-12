@@ -1,10 +1,10 @@
 # KernLab CI 单入口分流设计（Workflow Gate）
 
-> **版本**：0.2.4
+> **版本**：0.2.5
 > **日期**：2026-11-12
 > **适用范围**：组织内全部代码仓（产品仓、支撑仓）
 > **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§9/§10
-> **变更记录**：0.2.4 r10/w10 默认继承（触发自守卫+参数/paths 守卫内建），模板零注释块——仅 v20/v40（天然仓专属内容）保留 opt-in。0.2.3 workflow-templates 简化为单一 `gate.yml` 模板（旧 ci/policy/docs-deploy 三件套退役）——新建仓 Actions 一键实例化单入口。0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
+> **变更记录**：0.2.5 r10 顶层授权判例入册：reusable publish job 的 id-token: write 必须由 caller 顶层授予，缺授权 = startup_failure（repo-template 实锤复现 Loom alpha.7；定位链：lab 同位交换 + P1/P2 双探针）。0.2.4 r10/w10 默认继承（触发自守卫+参数/paths 守卫内建），模板零注释块——仅 v20/v40（天然仓专属内容）保留 opt-in。0.2.3 workflow-templates 简化为单一 `gate.yml` 模板（旧 ci/policy/docs-deploy 三件套退役）——新建仓 Actions 一键实例化单入口。0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
 
 ---
 
@@ -114,7 +114,8 @@ flowchart TB
 
 1. **入口恒跑**：e10/e20 不挂任何 `if`。e20 非 PR 上下文内部返回成功。
 2. **e10 是唯一合法的红**：红=非法输入，下游短路是正确行为（省资源池）。
-3. **下游禁用隐式 `success()`**：凡挂 `needs` 的节点一律显式 `!cancelled() && needs.<父>.result == 'success' && <业务条件>`（CI-INFRA §9 判例①）。
+3. **caller 顶层授权 ≥ 被调用 reusable 所需**：r10 的 OIDC publish 要求顶层 `id-token: write`——缺授权 = 整个 workflow startup_failure（判例：Loom alpha.7、repo-template 2026-11-12 探针复现）。gate 模板已固化 `contents: read + id-token: write`。
+4. **下游禁用隐式 `success()`**：凡挂 `needs` 的节点一律显式 `!cancelled() && needs.<父>.result == 'success' && <业务条件>`（CI-INFRA §9 判例①）。
 4. **纪律：gate.yml 自身的修改**必须在合并前 `workflow_dispatch` 冒烟验证——单文件形态下 gate.yml 语法错误波及面是全事件（含发布），靠冒烟兜底（判例：charter 孤儿键 startup_failure×5）。
 
 ## 6. 单文件形态的安全边界
@@ -162,6 +163,9 @@ concurrency:
 
 permissions:
   contents: read
+  # ★ r10-release 的 OIDC publish 要求顶层 id-token: write——缺授权 = 整个 workflow
+  #   startup_failure（Loom alpha.7 / repo-template 实锤，CI-GATE §5 判例④）
+  id-token: write
 
 jobs:
   # ── 入口层（恒跑）──

@@ -18,6 +18,9 @@ concurrency:
 
 permissions:
   contents: read
+  # ★ r10-release 的 OIDC publish 要求顶层 id-token: write——缺授权 = 整个 workflow
+  #   startup_failure（Loom alpha.7 / repo-template 实锤，CI-GATE §5 判例④）
+  id-token: write
 
 jobs:
   # ── 入口层（恒跑）──
