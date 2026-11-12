@@ -1,0 +1,63 @@
+name: docs-check-reusable
+
+# docs 快速通道质量门——组织通用段（workflow_call，BRANCHING.md §6.2）。
+# 检查面：本次 PR 新增/修改的 .md/.mdx 中，站内相对链接的目标文件必须存在——
+# 删文档留死引用在此拦下（新增/修改/删除三种文档操作都覆盖）。仓专属检查
+# （如 Loom 的 docs-nav-lint）在调用桩另挂 job，并进 docs-merge 的 needs。
+# 明确不查内容正确性（错别字/事实性错误 CI 拦不住）——内容质量走人工 review，
+# md 不进编译产物，只有随发布 PR 到 main 时才由 docs-deploy 上站，影响面一轮发布内可修。
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: 改动文档站内链接解析
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "$BASE"
+          changed=$(git diff --name-only --diff-filter=ACM "origin/${BASE}...${HEAD_SHA}" \
+            | grep -E '\.(md|mdx)$' || true)
+          if [ -z "$changed" ]; then
+            echo "无新增/修改的 md/mdx（纯删除或非文本 docs 件）——链接检查按口径跳过"
+            exit 0
+          fi
+          fail=0
+          while IFS= read -r md; do
+            echo "== $md =="
+            dir=$(dirname "$md")
+            # 提取行内链接目标（](x) 形态；参考式链接 [x]: y 暂不入 v1 口径）
+            links=$(grep -oE '\]\([^[:space:]]+' "$md" | sed -E 's/^\]\(//' || true)
+            while IFS= read -r link; do
+              [ -n "$link" ] || continue
+              case "$link" in
+                \#*|http://*|https://*|mailto:*) continue ;;   # 纯锚点 / 外部链接不查
+                *#*) link="${link%%#*}" ; [ -n "$link" ] || continue ;;  # 去掉页内锚
+              esac
+              case "$link" in
+                /*) target="$GITHUB_WORKSPACE$link" ;;   # 仓库根绝对路径
+                *)  target="$dir/$link" ;;               # 相对当前文档
+              esac
+              if [ ! -e "$target" ]; then
+                echo "::error file=$md::死链接 → $link（目标不存在：$target）"
+                fail=1
+              fi
+            done <<< "$links"
+          done <<< "$changed"
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::docs 质量门：存在死链接——修完 push 后自动重判"
+          fi
+          exit $fail

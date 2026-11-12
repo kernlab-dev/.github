@@ -26,8 +26,20 @@ permissions:
   contents: read
 
 jobs:
+  # ── docs 快速通道分诊（BRANCHING §6.2：docs/* → dev 双条件门第一条件）──
+  # 只有 docs/* 来源且目标 dev 的 PR 进入分诊；feat/fix/chore 等功能分支不进，直接全量。
+  # triage 被 skip 或判 false → ci 全量照跑；triage 失败 → 保守全量（宁可全量不可漏跑）。
+  triage:
+    name: docs 分诊（docs/* → dev）
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev' && startsWith(github.head_ref, 'docs/')
+    uses: kernlab-dev/.github/.github/workflows/reusable-docs-triage.yml@main
+
   ci:
+    needs: triage
+    # docs 快速通道：docs/* 来源 + 纯文档 diff → 跳过全量 CI（换跑下方 docs-check）。
     # 30 分钟硬超时在 reusable-ci 的 ci job 内部（caller 的 uses job 不挂 timeout-minutes）
+    if: >-
+      ${{ always() && !(needs.triage.result == 'success' && needs.triage.outputs.docs_only == 'true') }}
     uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
     with:
       runner: ubuntu-latest              # GitHub 托管单腿
@@ -40,3 +52,26 @@ jobs:
       # ui_project_path: src/ui
       # ui_node_version: '20'            # 缺省 20
       # ui_build_command: 'run build'    # 缺省 run build（家族栈自带 vue-tsc 类型门）
+
+  # ── docs 质量门（组织通用段：改动文档站内链接解析）──
+  # 仓专属检查（如 nav lint）另挂 job 并进 docs-merge 的 needs。
+  docs-check:
+    name: docs 质量门（通用）
+    needs: triage
+    if: needs.triage.outputs.docs_only == 'true'
+    uses: kernlab-dev/.github/.github/workflows/reusable-docs-check.yml@main
+
+  # ── docs 自动合并终段：竞态复核 + squash + 删临时分支 ──
+  # 前置：triage 判 docs_only + 质量门全绿 + 非 draft（base=dev 已由 triage 的 if 锁定）。
+  # DOCS_MERGE_PAT 未配置时终段显式跳过（不假绿），走人工合并。
+  docs-merge:
+    name: docs 自动合并（squash + 删临时分支）
+    needs: [triage, docs-check]
+    if: >-
+      ${{ !cancelled() &&
+          needs.triage.result == 'success' && needs.triage.outputs.docs_only == 'true' &&
+          needs.docs-check.result == 'success' &&
+          github.event.pull_request.draft == false }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-docs-merge.yml@main
+    secrets:
+      DOCS_MERGE_PAT: ${{ secrets.DOCS_MERGE_PAT }}

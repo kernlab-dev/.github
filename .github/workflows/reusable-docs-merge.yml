@@ -1,0 +1,53 @@
+name: docs-merge-reusable
+
+# docs 快速通道终段（workflow_call，BRANCHING.md §6.2）：竞态复核 + squash 自动合并 + 删临时分支。
+# 合并身份 = DOCS_MERGE_PAT（fine-grained PAT：Contents RW + Pull requests RW，服务号账号）——
+# 刻意不用 GITHUB_TOKEN：①token 触发的事件不带动任何下游 workflow（push 审计/docs-deploy 会哑火）；
+# ②审计身份不可辨。审计口径：dev 上的 bot actor squash 单亲提交 = docs 快速通道产物（放行）。
+# 前置由调用桩保证（docs_only=true + 质量门全绿 + base=dev + 非 draft）；本 job 只做最后防线复核。
+# DOCS_MERGE_PAT 未配置 → 显式跳过打日志（不假绿），走人工合并——同 DOCS_SYNC_TOKEN 缺失口径。
+
+on:
+  workflow_call:
+    secrets:
+      DOCS_MERGE_PAT:
+        description: '自动合并身份（fine-grained PAT）；未配置时显式跳过不假绿'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 竞态复核 + squash 合并 + 删临时分支
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_MERGE_PAT }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::DOCS_MERGE_PAT 未配置——跳过自动合并（不假绿）；请人工合并"
+            exit 0
+          fi
+
+          # 竞态复核：本 run 判定的 head 与当前 head 必须一致——判定后有人推了新 commit
+          # 就交给新 push 触发的 run 重新判定，绝不把没验过的内容合进去
+          current=$(gh pr view "$PR" -R "$REPO" --json headRefOid --jq .headRefOid)
+          if [ "$current" != "$EXPECTED_HEAD" ]; then
+            echo "::error::PR head 已推进（判定基线 $EXPECTED_HEAD → 当前 $current）——本次判定作废，由新触发的 run 接手"
+            exit 1
+          fi
+
+          mergeable=$(gh pr view "$PR" -R "$REPO" --json mergeable --jq .mergeable)
+          if [ "$mergeable" != "MERGEABLE" ]; then
+            echo "::error::PR 当前不可合并（mergeable=$mergeable）——留给作者处理"
+            exit 1
+          fi
+
+          gh pr merge "$PR" -R "$REPO" --squash --delete-branch
+          echo "docs PR #$PR 已 squash 合并进 ${{ github.base_ref }}，临时分支已删"
