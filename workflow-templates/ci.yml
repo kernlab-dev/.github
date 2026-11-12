@@ -26,23 +26,21 @@ permissions:
   contents: read
 
 jobs:
-  # ── docs 快速通道分诊（BRANCHING §6.2：docs/* → dev 双条件门第一条件）──
-  # 只有 docs/* 来源且目标 dev 的 PR 进入分诊；feat/fix/chore 等功能分支不进，直接全量。
-  # triage 被 skip 或判 false → ci 全量照跑；triage 失败 → 保守全量（宁可全量不可漏跑）。
-  # ⚠️ 传递性 skip：triage 在非 docs 分支为 skipped，success() 对 needs DAG 传递求值——
-  #    任何直接/间接 needs: ci 的新 job 必须显式 if: >-
-  #    ${{ !cancelled() && needs.ci.result == 'success' && ... }}，否则会被传染 skip（loom 2026-11-12 判例）。
+  # ── docs 快速通道分诊（BRANCHING §6.2）──
+  # ★不给本 job 挂任何 if——必须无条件常跑（内部对非 PR 上下文恒成功返回 docs_only=false）。
+  #   success() 对 needs DAG 传递求值：triage 一旦 skipped/失败，下游整链（编译/测试/E2E）
+  #   被传染跳过＝空壳绿（tier#1417 / traffic#382 判例）。
+  #   双条件门（docs/* 来源 + 目标 dev + 纯文档 diff）整体收在消费端条件里。
   triage:
-    name: docs 分诊（docs/* → dev）
-    if: github.event_name == 'pull_request' && github.base_ref == 'dev' && startsWith(github.head_ref, 'docs/')
+    name: docs 分诊
     uses: kernlab-dev/.github/.github/workflows/reusable-docs-triage.yml@main
 
   ci:
     needs: triage
-    # docs 快速通道：docs/* 来源 + 纯文档 diff → 跳过全量 CI（换跑下方 docs-check）。
+    # docs 快速通道：docs/* → dev 且纯文档才跳过全量（feat 等功能分支即使纯文档 diff 也全量）。
     # 30 分钟硬超时在 reusable-ci 的 ci job 内部（caller 的 uses job 不挂 timeout-minutes）
     if: >-
-      ${{ always() && !(needs.triage.result == 'success' && needs.triage.outputs.docs_only == 'true') }}
+      ${{ always() && !(needs.triage.result == 'success' && needs.triage.outputs.docs_only == 'true' && startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev') }}
     uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
     with:
       runner: ubuntu-latest              # GitHub 托管单腿
@@ -61,11 +59,12 @@ jobs:
   docs-check:
     name: docs 质量门（通用）
     needs: triage
-    if: needs.triage.outputs.docs_only == 'true'
+    if: >-
+      ${{ needs.triage.outputs.docs_only == 'true' && startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' }}
     uses: kernlab-dev/.github/.github/workflows/reusable-docs-check.yml@main
 
   # ── docs 自动合并终段：竞态复核 + squash + 删临时分支 ──
-  # 前置：triage 判 docs_only + 质量门全绿 + 非 draft（base=dev 已由 triage 的 if 锁定）。
+  # 前置：docs/* → dev + 纯文档 + 质量门全绿 + 非 draft。
   # DOCS_MERGE_PAT 未配置时终段显式跳过（不假绿），走人工合并。
   docs-merge:
     name: docs 自动合并（squash + 删临时分支）
@@ -73,6 +72,7 @@ jobs:
     if: >-
       ${{ !cancelled() &&
           needs.triage.result == 'success' && needs.triage.outputs.docs_only == 'true' &&
+          startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' &&
           needs.docs-check.result == 'success' &&
           github.event.pull_request.draft == false }}
     uses: kernlab-dev/.github/.github/workflows/reusable-docs-merge.yml@main
