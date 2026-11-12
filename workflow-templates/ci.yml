@@ -33,7 +33,7 @@ jobs:
   #   双条件门（docs/* 来源 + 目标 dev + 纯文档 diff）整体收在消费端条件里。
   triage:
     name: docs 分诊
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-triage.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-e20-triage.yml@main
 
   ci:
     needs: triage
@@ -41,7 +41,7 @@ jobs:
     # 30 分钟硬超时在 reusable-ci 的 ci job 内部（caller 的 uses job 不挂 timeout-minutes）
     if: >-
       ${{ always() && !(needs.triage.result == 'success' && needs.triage.outputs.docs_only == 'true' && startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev') }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-v10-ci.yml@main
     with:
       runner: ubuntu-latest              # GitHub 托管单腿
       # runners_matrix: '["win-ci", "pve-ci"]'   # ← 自建组合形态（二选一）
@@ -61,7 +61,7 @@ jobs:
     needs: triage
     if: >-
       ${{ needs.triage.outputs.docs_only == 'true' && startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-check.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-v30-docs.yml@main
 
   # ── docs 自动合并终段：竞态复核 + squash + 删临时分支 ──
   # 前置：docs/* → dev + 纯文档 + 质量门全绿 + 非 draft。
@@ -75,6 +75,6 @@ jobs:
           startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' &&
           needs.docs-check.result == 'success' &&
           github.event.pull_request.draft == false }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-merge.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-m10-docs-merge.yml@main
     secrets:
       DOCS_MERGE_PAT: ${{ secrets.DOCS_MERGE_PAT }}
