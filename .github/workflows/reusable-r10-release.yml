@@ -172,16 +172,25 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
+      # ★ snupkg 容错（alpha.19 判例）：无符号包产物时 glob 落空=push exit 1 误红——push 前置存在检查
       - name: Push to nuget.org（API key 模式）
         if: env.NUGET_API_KEY != ''
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           dotnet nuget push "artifacts/*.nupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
-          dotnet nuget push "artifacts/*.snupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          if ls artifacts/*.snupkg >/dev/null 2>&1; then
+            dotnet nuget push "artifacts/*.snupkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          else
+            echo "无 snupkg 产物（IncludeSymbols=false 口径）——跳过符号包 push"
+          fi
 
       - name: Push to nuget.org（OIDC 模式）
         if: env.NUGET_API_KEY == ''
         run: |
           dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
-          dotnet nuget push "artifacts/*.snupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          if ls artifacts/*.snupkg >/dev/null 2>&1; then
+            dotnet nuget push "artifacts/*.snupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          else
+            echo "无 snupkg 产物——跳过符号包 push"
+          fi
