@@ -66,5 +66,21 @@ jobs:
   # ── 按需启用（打开注释 + 补仓参数；完整形态见 CI-GATE §8）──
   # v20-extension:  仓扩展验证（自建池/外部端点链）
   # v40-heavy:      重线 AOT/长稳/全矩阵（schedule/dispatch/push main）
-  # r10-release:    tag v* 发布（需 NUGET_* secrets + version_project 对齐）
-  # w10-docs-deploy: 文档站（需 docs-site/ + DOCS_SYNC_TOKEN）
+  r10-release:
+    name: 发布管线（tag v*）
+    needs: [e10-policy]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' &&
+          github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-r10-release.yml@main
+    # 触发自守卫：只被 tag v* push 激活，不发布版本的仓永不触发；
+    # 发布凭证缺失 = fail-loud（正确信号）——配 NUGET_* 后即通
+  w10-docs-deploy:
+    name: 文档站（构建→聚合→上站）
+    needs: [e10-policy]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-w10-docs-deploy.yml@main
+    # 双守卫内建（缺参数/无文档路径 → 恒成功空转）：未启用文档站的仓零成本；
+    # 启用时配 product/project_paths + docs-site/ + DOCS_SYNC_TOKEN

@@ -1,10 +1,10 @@
 # KernLab CI 单入口分流设计（Workflow Gate）
 
-> **版本**：0.2.3
+> **版本**：0.2.4
 > **日期**：2026-11-12
 > **适用范围**：组织内全部代码仓（产品仓、支撑仓）
 > **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§9/§10
-> **变更记录**：0.2.3 workflow-templates 简化为单一 `gate.yml` 模板（旧 ci/policy/docs-deploy 三件套退役）——新建仓 Actions 一键实例化单入口。0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
+> **变更记录**：0.2.4 r10/w10 默认继承（触发自守卫+参数/paths 守卫内建），模板零注释块——仅 v20/v40（天然仓专属内容）保留 opt-in。0.2.3 workflow-templates 简化为单一 `gate.yml` 模板（旧 ci/policy/docs-deploy 三件套退役）——新建仓 Actions 一键实例化单入口。0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
 
 ---
 

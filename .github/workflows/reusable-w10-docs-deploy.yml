@@ -13,11 +13,13 @@ on:
       product:
         description: '产品路径名（聚合仓 sites/ 目录名，如 tier）'
         type: string
-        required: true
+        required: false
+        default: ''
       project_paths:
         description: '空格分隔发布项目 csproj 路径清单（★漏一个项目其 API 参考整层缺失）'
         type: string
-        required: true
+        required: false
+        default: ''
       dotnet_version:
         description: 'SDK 版本'
         type: string
@@ -35,6 +37,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      # ★ 参数守卫（gate 默认继承形态：w10 对未启用文档站的仓恒成功空转）
+      - name: 参数守卫（未配置文档项目则跳过）
+        env:
+          PRODUCT: ${{ inputs.product }}
+          PROJECT_PATHS: ${{ inputs.project_paths }}
+        run: |
+          if [ -z "$PRODUCT" ] || [ -z "$PROJECT_PATHS" ]; then
+            echo "::notice::product/project_paths 未配置——本仓未启用文档站，跳过"
+            exit 0
+          fi
+
+      # ★ paths 守卫（gate 单入口形态：w10 默认继承挂 push main，本步骤保证
+      #   非文档 push 秒级空转跳过，不烧 docfx；旧 stub 的触发级 paths 与本守卫双保险兼容）
+      - name: paths 守卫（无文档路径显式跳过）
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            echo "新分支/未知基线——按有文档变更处理"; exit 0
+          fi
+          git fetch -q --depth=1 origin "$BEFORE" 2>/dev/null || { echo "基线不可取——按有文档变更处理"; exit 0; }
+          if git diff --name-only "$BEFORE" "$GITHUB_SHA" \
+              | grep -Eq '^(docs-site/|src/.*/docs/|src/.*/COORDINATION\.md$|[^/]*\.md$|toc\.yml$|docs/)'; then
+            echo "检测到文档路径——继续文档站发布"
+          else
+            echo "::notice::无文档路径——跳过文档站发布"
+            exit 0
+          fi
 
       - name: Setup .NET
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
