@@ -29,6 +29,9 @@ jobs:
   # ── docs 快速通道分诊（BRANCHING §6.2：docs/* → dev 双条件门第一条件）──
   # 只有 docs/* 来源且目标 dev 的 PR 进入分诊；feat/fix/chore 等功能分支不进，直接全量。
   # triage 被 skip 或判 false → ci 全量照跑；triage 失败 → 保守全量（宁可全量不可漏跑）。
+  # ⚠️ 传递性 skip：triage 在非 docs 分支为 skipped，success() 对 needs DAG 传递求值——
+  #    任何直接/间接 needs: ci 的新 job 必须显式 if: >-
+  #    ${{ !cancelled() && needs.ci.result == 'success' && ... }}，否则会被传染 skip（loom 2026-11-12 判例）。
   triage:
     name: docs 分诊（docs/* → dev）
     if: github.event_name == 'pull_request' && github.base_ref == 'dev' && startsWith(github.head_ref, 'docs/')
