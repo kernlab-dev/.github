@@ -1,10 +1,10 @@
 # KernLab CI 单入口分流设计（Workflow Gate）
 
-> **版本**：0.2.1
+> **版本**：0.2.2
 > **日期**：2026-11-12
 > **适用范围**：组织内全部代码仓（产品仓、支撑仓）
 > **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§9/§10
-> **变更记录**：0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
+> **变更记录**：0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
 
 ---
 
@@ -186,12 +186,13 @@ jobs:
           !(needs.e20-triage.outputs.docs_only == 'true' &&
             startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev') }}
     uses: kernlab-dev/.github/.github/workflows/reusable-v10-ci.yml@main
-    with:
-      runner: linux-h                     # 仓参数
-      use_setup_dotnet: false
-      build_config: Release
-      test_projects: 'tests/*/*.csproj'
-      test_retries: '1'
+    # ★简单仓到此为止——零参数零槽位文件。缺省约定（=组织口径）：
+    #   自动发现根 sln ｜ tests/*/*.csproj glob 逐个顺序跑 ｜ ubuntu-latest ｜ Release ｜ 重试 0
+    # 需要"不合群"定制时才写东西：传参差异（Loom：solution 一次成型+过滤器）→ 加 with 行；
+    # 整体换掉（Tier：matrix→六套件链；Traffic：五件套链）→ 换本仓槽位 uses: ./.github/workflows/v10-ci.yml
+    # with:                                  # ← 参数仅在偏离组织缺省时出现
+    #   runner: linux-h
+    #   use_setup_dotnet: false
 
   v20-extension:                          # 仓扩展（Tier: matrix→raft 套件 / Traffic: build→test→e2e）
     name: 仓扩展验证
