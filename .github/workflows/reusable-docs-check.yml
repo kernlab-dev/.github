@@ -39,8 +39,9 @@ jobs:
           while IFS= read -r md; do
             echo "== $md =="
             dir=$(dirname "$md")
-            # 提取行内链接目标（](x) 形态；参考式链接 [x]: y 暂不入 v1 口径）
-            links=$(grep -oE '\]\([^[:space:]]+' "$md" | sed -E 's/^\]\(//' || true)
+            # 提取行内链接目标（](x) 闭合形态；参考式链接 [x]: y 暂不入 v1 口径；
+            # 链接目标内含未转义 ) 的 md 罕见形态会被截断误报——出现时转义即可）
+            links=$(grep -oE '\]\([^)]+\)' "$md" | sed -E 's/^\]\(//; s/\)$//' || true)
             while IFS= read -r link; do
               [ -n "$link" ] || continue
               case "$link" in
