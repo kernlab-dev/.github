@@ -1,0 +1,74 @@
+name: e20-triage
+
+# docs 快速通道分诊（workflow_call——逻辑单源收口于此，BRANCHING.md §6.2）。
+# ★调用桩不给本 job 挂任何 if——它必须无条件常跑：
+#   success() 对 needs DAG 传递求值（2026-11-12 tier#1417/traffic#382 判例），triage 一旦
+#   skipped/失败，整条下游链（编译/测试/E2E）被传染跳过=空壳绿。无条件常跑 + 恒成功，
+#   传递链天然干净；docs/* + dev 的双条件门整体收在消费端条件里。
+# 非 PR 上下文（push/dispatch）直接 docs_only=false 成功返回——快速通道仅 PR 语义。
+# docs 面口径与 docs-deploy 桩 paths 清单对齐；.github/** 恒非 docs——改 CI 的 PR 必须走全量
+# （且自动合并身份 PAT 无 workflows 权限，含 workflow 文件的 PR 本就不能自动落，两相吻合）。
+# 判定失败 / 空 diff 一律保守 docs_only=false（宁可全量，不可漏跑）。
+# 判定按 PR 全量 diff（merge-base 起），每笔 push 重跑即重判——"先文档后补代码"的 PR 不会漏升级。
+
+on:
+  workflow_call:
+    inputs:
+      docs_globs:
+        description: '仓级覆盖：docs 类路径正则（grep -E 口径；空 = 组织缺省口径）'
+        type: string
+        default: ''
+    outputs:
+      docs_only:
+        description: 'true = 纯文档变更，可走快速通道'
+        value: ${{ jobs.triage.outputs.docs_only }}
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      docs_only: ${{ steps.diff.outputs.docs_only }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - id: diff
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CUSTOM_GLOBS: ${{ inputs.docs_globs }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BASE:-}" ] || [ -z "${HEAD_SHA:-}" ]; then
+            echo "非 PR 上下文（push/dispatch/schedule）——快速通道仅 PR 语义，docs_only=false"
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --no-tags origin "$BASE"
+          files=$(git diff --name-only "origin/${BASE}...${HEAD_SHA}")
+          echo "--- changed files ($BASE...$HEAD_SHA) ---"
+          echo "$files"
+          globs="$CUSTOM_GLOBS"
+          [ -n "$globs" ] || globs='(\.md$|\.mdx$|^docs/|^docs-site/|(^|/)toc\.ya?ml$|COORDINATION\.md$|^README(\..*)?$|\.puml$|\.mermaid$|\.drawio$)'
+          total=0
+          non_docs=0
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            total=$((total + 1))
+            if ! grep -Eq -- "$globs" <<< "$f"; then
+              non_docs=$((non_docs + 1))
+              echo "non-docs: $f"
+            fi
+          done <<< "$files"
+          if [ "$total" -eq 0 ] || [ "$non_docs" -gt 0 ]; then
+            echo "triage: 共 $total 个文件，其中 $non_docs 个非 docs → docs_only=false（走全量）"
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "triage: 共 $total 个文件全为 docs → docs_only=true（快速通道）"
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+          fi

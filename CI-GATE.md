@@ -1,10 +1,10 @@
 # KernLab CI 单入口分流设计（Workflow Gate）
 
-> **版本**：0.2.0
+> **版本**：0.2.1
 > **日期**：2026-11-12
 > **适用范围**：组织内全部代码仓（产品仓、支撑仓）
 > **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§9/§10
-> **变更记录**：0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
+> **变更记录**：0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
 
 ---
 
@@ -60,6 +60,14 @@ flowchart TB
 ```
 
 ## 3. 节点命名规范
+
+**文件命名**（组织标准，一次定稿不再改）：
+
+| 文件类型 | 规范 | 例 |
+|---|---|---|
+| 组织 reusable（dotgithub/.github/workflows/） | `reusable-<节点码>.yml` | `reusable-e10-policy.yml` |
+| 仓槽位（仓/.github/workflows/） | `<节点码>.yml` | `v10-ci.yml`、`v40-heavy.yml` |
+| 仓唯一入口 | `gate.yml`（工作流名 `Gate`） | — |
 
 **格式**：`<层码><序号>-<语义名>`（job key 全小写 kebab；`name:` 显示中文）。
 
@@ -123,13 +131,13 @@ release 并入单文件后的风险与缓解：
 
 | reusable | 消费节点 | 状态 |
 |---|---|---|
-| `reusable-policy-check.yml` | e10（PR 段 + tag 段） | 已有 |
-| `reusable-docs-triage.yml` | e20 | 已有（无条件常跑形态） |
-| `reusable-ci.yml` | v10 | 已有 |
-| `reusable-docs-check.yml` | v30 | 已有 |
-| `reusable-docs-merge.yml` | m10 | 已有 |
-| `reusable-release.yml` | r10 | 已有 |
-| `reusable-docs-deploy.yml` | w10 | 已有 |
+| `reusable-e10-policy.yml` | e10（PR 段 + tag 段） | 已有 |
+| `reusable-e20-triage.yml` | e20 | 已有（无条件常跑形态） |
+| `reusable-v10-ci.yml` | v10 | 已有 |
+| `reusable-v30-docs.yml` | v30 | 已有 |
+| `reusable-m10-docs-merge.yml` | m10 | 已有 |
+| `reusable-r10-release.yml` | r10 | 已有 |
+| `reusable-w10-docs-deploy.yml` | w10 | 已有 |
 
 本设计**不新增 reusable**，只改仓侧拓扑。
 
@@ -159,14 +167,14 @@ jobs:
   # ── 入口层（恒跑）──
   e10-policy:
     name: 强校验（来源/Tag/版本）
-    uses: kernlab-dev/.github/.github/workflows/reusable-policy-check.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-e10-policy.yml@main
     with:
       version_project: 'src/....csproj'   # 仓参数
       changelog_file: 'CHANGELOG.md'
 
   e20-triage:
     name: 分诊（路由信号）
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-triage.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-e20-triage.yml@main
 
   # ── 验证层 ──
   v10-ci:
@@ -177,7 +185,7 @@ jobs:
           !startsWith(github.ref, 'refs/tags/') &&
           !(needs.e20-triage.outputs.docs_only == 'true' &&
             startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev') }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-v10-ci.yml@main
     with:
       runner: linux-h                     # 仓参数
       use_setup_dotnet: false
@@ -200,7 +208,7 @@ jobs:
     if: >-
       ${{ !cancelled() && needs.e10-policy.result == 'success' && needs.e20-triage.outputs.docs_only == 'true' &&
           startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-check.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-v30-docs.yml@main
 
   v40-heavy:
     name: 重线（AOT/长稳/全矩阵）
@@ -222,7 +230,7 @@ jobs:
           startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' &&
           needs.v30-docs.result == 'success' &&
           github.event.pull_request.draft == false }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-merge.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-m10-docs-merge.yml@main
     secrets:
       DOCS_MERGE_PAT: ${{ secrets.DOCS_MERGE_PAT }}
 
@@ -233,7 +241,7 @@ jobs:
     if: >-
       ${{ !cancelled() && needs.e10-policy.result == 'success' &&
           github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-release.yml@main
+    uses: kernlab-dev/.github/.github/workflows/reusable-r10-release.yml@main
     with:
       dotnet_version: '8.0.x'             # 仓参数
     secrets:
