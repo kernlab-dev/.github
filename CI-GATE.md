@@ -1,10 +1,10 @@
 # KernLab CI 单入口分流设计（Workflow Gate）
 
-> **版本**：0.2.5
+> **版本**：0.2.6
 > **日期**：2026-11-12
 > **适用范围**：组织内全部代码仓（产品仓、支撑仓）
 > **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§9/§10
-> **变更记录**：0.2.5 r10 顶层授权判例入册：reusable publish job 的 id-token: write 必须由 caller 顶层授予，缺授权 = startup_failure（repo-template 实锤复现 Loom alpha.7；定位链：lab 同位交换 + P1/P2 双探针）。0.2.4 r10/w10 默认继承（触发自守卫+参数/paths 守卫内建），模板零注释块——仅 v20/v40（天然仓专属内容）保留 opt-in。0.2.3 workflow-templates 简化为单一 `gate.yml` 模板（旧 ci/policy/docs-deploy 三件套退役）——新建仓 Actions 一键实例化单入口。0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
+> **变更记录**：0.2.6 新增 `o` 运维层（层码+注册表）：nuget-unlist 从 Tier 仓上收为组织中央单实例 `o10-nuget-unlist`（与 r10 发布↔回滚配套；.github 仓 PUBLIC → 组织 secret 原生投递）。0.2.5 r10 顶层授权判例入册：reusable publish job 的 id-token: write 必须由 caller 顶层授予，缺授权 = startup_failure（repo-template 实锤复现 Loom alpha.7；定位链：lab 同位交换 + P1/P2 双探针）。0.2.4 r10/w10 默认继承（触发自守卫+参数/paths 守卫内建），模板零注释块——仅 v20/v40（天然仓专属内容）保留 opt-in。0.2.3 workflow-templates 简化为单一 `gate.yml` 模板（旧 ci/policy/docs-deploy 三件套退役）——新建仓 Actions 一键实例化单入口。0.2.2 v10 缺省约定入模板（简单仓零参数零槽位文件；tests/*/*.csproj glob 顺序跑=组织口径，偏离才写 with/换槽位）。0.2.1 组织 reusable 文件名规范化（`reusable-<节点码>.yml`，与 §3 节点码一一对应；旧名文件暂留兼容，随各仓 gate 迁移退役）。0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
 
 ---
 
@@ -78,6 +78,7 @@ flowchart TB
 | `m` | merge 汇合层 | 自动合并类收口 | `m10-docs-merge` |
 | `r` | release 发布层 | tag 发布管线（串行内部阶段） | `r10-release` |
 | `w` | web 文档站层 | 文档站构建/聚合/上站 | `w10-docs-deploy` |
+| `o` | ops 运维层 | dispatch-only 运维工具（组织中央单实例，非仓 gate 节点） | `o10-nuget-unlist` |
 
 序号规则：层内**并行**节点用同段序号（v10/v20/v30/v40 互不依赖并行铺开）；层内**串行**链序号递增（如 Traffic 的 `v20-build → v21-test → v22-e2e`）。新增节点必须落在既有层码内；新增层码须先改本规范（本文件 PR）。
 
