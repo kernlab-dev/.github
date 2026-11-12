@@ -1,205 +1,293 @@
 # KernLab CI 单入口分流设计（Workflow Gate）
 
-> **版本**：0.1.0（设计稿——待评审，未生效）
+> **版本**：0.2.0
 > **日期**：2026-11-12
 > **适用范围**：组织内全部代码仓（产品仓、支撑仓）
-> **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§10 · 判例链 §9
-> **变更记录**：0.1.0 初稿。回应三判例：双入口语义混淆、success() 传递 skip 空壳绿（tier#1417）、非法来源照烧重门禁。
+> **关联**：[BRANCHING.md](https://github.com/kernlab-dev/.github-private/blob/main/BRANCHING.md) §6/§6.2 · [CI-INFRA.md](https://github.com/kernlab-dev/.github-private/blob/main/CI-INFRA.md) §1.5/§2/§9/§10
+> **变更记录**：0.2.0 按评审定案：**全统一入口**（release / docs-deploy 并入，无独立 workflow 文件）；节点命名规范化（层码+序号+语义名）；通用流程图定稿。0.1.0 初稿。
 
 ---
 
-## 1. 背景与问题
+## 1. 核心原则
 
-| # | 问题 | 实锤 |
-|---|---|---|
-| P1 | PR 触发两个 workflow（CI + Policy）→ 双状态检查、运行列表噪音、"为什么跑两个 CI"的语义混淆 | tier PR 面板：CI#1230 + Policy#513 |
-| P2 | `success()` 对 needs DAG **传递求值**——入口 job 被 skip 后下游整链空壳绿 | tier#1417（build-test-pack skipped 但 run 绿）、traffic#382（编译/单测/SDK 契约/kind E2E 全空壳） |
-| P3 | Policy 独立于重门禁——非法来源分支的 PR 照烧 30 分钟 linux-h | 设计缺口，非判例 |
+1. **一个仓一个工作流文件**：`gate.yml`（工作流名 `Gate`）。PR 门禁、docs 快速通道、发布、文档站、nightly、手动全部经由它分流——**没有独立入口**。
+2. **入口强校验**：`e10-policy` 恒跑，是唯一合法的"红"；红 → 全链短路（非法输入不烧任何资源）。
+3. **分诊路由**：`e20-triage` 恒跑恒成功，产出路由信号（`docs_only`）；`success()` 传递求值防线由此保证（CI-INFRA §9 判例①）。
+4. **节点命名规范**：`<层码><序号>-<语义名>`，全仓全组织统一（§3）。
+5. **单源收口**：执行逻辑全部在 dotgithub reusable；`gate.yml` 只剩触发块 + 节点接线 + 仓参数。
 
-## 2. 三个概念问题的回答（本设计的地基）
+## 2. 通用执行流程图
 
-**Q1：一个入口怎么做分流？**
-Job 级 `if` 条件路由。入口 job 产出路由信号（事件类型、来源分支、内容分诊 `docs_only`），下游每个 job 用 `if` 声明自己为什么跑、为什么不跑。分流逻辑单点可见，不再散落在多个 workflow 文件的触发器里。
+```mermaid
+flowchart TB
+    T(["触发：PR→main/dev ｜ push main ｜ push tag v* ｜ schedule ｜ dispatch"])
 
-**Q2：多 job 能并行/串行吗？**
-`needs` DAG 原生支持。无 `needs` 的 job 并行 fan-out（如 policy ∥ triage 秒级并行）；`needs` 串行收口（如 build → test → e2e）；`needs` 多父 fan-in（如 docs-merge 需要 [policy, triage, docs-check] 全绿）。并行不占同一台机器——并行度只受资源池并发约束（§5）。
+    subgraph ENTRY["入口层（恒跑）"]
+        e10["e10-policy<br/>强校验·唯一合法红<br/>（来源分支/Tag/版本/CHANGELOG）"]
+        e20["e20-triage<br/>分诊·路由信号 docs_only"]
+    end
 
-**Q3：多台 CI 服务器怎么参与？**
-`runs-on` 标签 → 资源池（CI-INFRA §1.5 分派表）：`linux-h` = pve 三机轮转（12G 重门禁）、`linux-l` = ci-h-3/腾讯云（轻量）、`ubuntu-latest`/`windows-latest` = GitHub 托管（秒级/matrix/文档）。同一个 workflow 里不同 job 天然落不同机器——单入口不改变分派语义。
+    subgraph VERIFY["验证层"]
+        v10["v10-ci<br/>完整门禁（build+全量测试）"]
+        v20["v20-extension<br/>仓扩展验证"]
+        v30["v30-docs<br/>docs 质量门"]
+        v40["v40-heavy<br/>重线（AOT/长稳/全矩阵）"]
+    end
 
-## 3. 设计目标
+    subgraph MERGE["汇合层"]
+        m10["m10-docs-merge<br/>squash 合并+删临时分支"]
+    end
 
-1. **单入口**：每仓 PR 门禁只有一个 workflow、一个状态检查、一次运行。
-2. **强校验前置**：非法来源分支秒级红，重门禁短路（不烧资源池）。
-3. **规则分流**：docs 快速通道 / 完整 CI / main 重线 / nightly 专项由事件+条件路由，规则单表可见（§4）。
-4. **关键路径隔离**：release（tag 发布）与 docs-deploy（文档站）保持独立文件——门禁文件的语法错误不波及发版能力。
-5. **单源收口**：全部分流与门禁逻辑在 dotgithub reusable；仓内只剩薄桩（触发块 + 参数 + 仓专属扩展 job）。
-6. **传递 skip 防线**（CI-INFRA §9 判例③的制度化）：入口 job 恒跑；扩展 job 一律显式条件。
+    subgraph SHIP["交付层"]
+        r10["r10-release<br/>发布管线（build→pack→publish）"]
+        w10["w10-docs-deploy<br/>文档站构建→聚合→上站"]
+    end
 
-## 4. 分流规则总表（唯一权威表）
+    X(["短路终止（非法输入）"])
 
-| 事件 | 来源分支 | 内容分诊 | 路由 | runner |
-|---|---|---|---|---|
-| PR → dev | `docs/*` | 纯文档 | policy ✓ → docs-check → **自动 squash 合并 + 删分支** | ubuntu-latest |
-| PR → dev | `docs/*` | 夹代码 | 完整 CI（triage 判 false） | linux-h 等 |
-| PR → dev | `feat/* fix/* chore/* hotfix/* main` | 任意 | 完整 CI（双条件门缺分支条件，不进快速通道） | linux-h 等 |
-| PR → dev | 非法来源 | — | **policy 红 → 全部短路**（run 秒级红，不占池） | ubuntu-latest |
-| PR → main | `dev` / `hotfix/*` | 任意 | 完整 CI + 发布检查单 + release owner 人工批准（永不自动合并） | linux-h 等 |
-| push main | — | — | 重线后置防线（AOT 探针等仓扩展）+ docs-deploy（paths 独立文件） | linux-l/linux-h |
-| tag `v*` | — | — | `release.yml` 独立文件（自带 tag policy 前置 → build/pack/publish） | 见 release 配置 |
-| schedule | — | — | nightly 专项（同文件内 `if: event == schedule` 的 job：模板 smoke/AOT） | linux-h/linux-l |
-| dispatch | — | — | 手动 opt-in（win 认证腿、专项验证） | 按输入 |
-
-**双条件门定义**（docs 快速通道，三者同时满足）：来源分支 `docs/*` ∧ 目标 `dev` ∧ diff 纯文档（`.github/**` 恒非 docs）。
-
-## 5. 单入口拓扑（needs DAG）
-
-```
-PR / push / dispatch / schedule
-        │
-        ├─ ① policy   入口强校验（恒跑；唯一合法的红；红 → ②③④⑤ 全短路）
-        │     └─ reusable-policy-check（PR 段：来源分支矩阵）
-        │
-        ├─ ② triage   内容分诊（恒跑恒成功；非 PR 上下文 → docs_only=false）
-        │     └─ reusable-docs-triage
-        │
-        │   ┌── 并行 fan-out（同一 workflow 内，按标签落不同资源池）──┐
-        ├── ③ docs-check   if: 快速通道全条件            ubuntu-latest
-        ├── ④ ci           if: 非 schedule 且非快速通道  linux-h（reusable-ci 内部 matrix）
-        ├── ⑤ 扩展 job…    if: 显式条件（仓专属，逐个声明） linux-h/linux-l/托管
-        │   └──────────────────────────────────────────────┘
-        │
-        └─ ⑥ docs-merge  if: ①②③ 全绿 + 快速通道全条件 + 非 draft
-              └─ reusable-docs-merge（竞态复核 + squash + 删分支）
+    T --> e10
+    T --> e20
+    e10 -- "红 ⇒ 全链短路" --> X
+    e10 --> v10
+    e20 --> v10
+    e10 --> v30
+    e20 --> v30
+    e10 --> v40
+    e10 --> r10
+    e10 --> w10
+    v10 --> v20
+    v30 --> m10
 ```
 
-并行语义：①②并行秒过；④⑤在③不该跑时并行铺开；③⑥只占 ubuntu 托管秒级。串行语义：⑥等③；Traffic 的 build→test→kind-e2e 链保持串行收口。
+## 3. 节点命名规范
 
-## 6. 传递 skip 防线（制度化三原则）
+**格式**：`<层码><序号>-<语义名>`（job key 全小写 kebab；`name:` 显示中文）。
 
-1. **入口 job 恒跑**：`policy` 与 `triage` 不挂任何 `if`。triage 对非 PR 上下文在步骤内返回 `docs_only=false` 成功；policy 的"红"是唯一合法的失败语义（红=非法来源，本来就该全红）。
-2. **policy 红即短路**：重门禁条件显式含 `needs.policy.result == 'success'`——非法来源的 PR 不烧 30 分钟 linux-h（**决策点 D1**：短路 vs 照跑，本稿取短路，理由=注定不能合的 PR 无测试价值，修复来源后重触发即得全量）。
-3. **下游扩展 job 禁用隐式 `success()`**：凡 `needs` 了入口 job 的自定义 job，一律显式 `if: >- ${{ !cancelled() && needs.<直接父>.result == 'success' && <业务条件> }}`。隐式传递求值是空壳绿根因（判例 CI-INFRA §9 ③①）。
+| 层码 | 层 | 语义 | 节点 |
+|---|---|---|---|
+| `e` | entry 入口层 | 强校验 + 路由信号；**恒跑** | `e10-policy`、`e20-triage` |
+| `v` | verify 验证层 | 一切验证类执行（门禁/扩展/docs 门/重线） | `v10-ci`、`v20-extension`、`v30-docs`、`v40-heavy` |
+| `m` | merge 汇合层 | 自动合并类收口 | `m10-docs-merge` |
+| `r` | release 发布层 | tag 发布管线（串行内部阶段） | `r10-release` |
+| `w` | web 文档站层 | 文档站构建/聚合/上站 | `w10-docs-deploy` |
 
-## 7. 关键路径隔离（什么不并入单入口）
+序号规则：层内**并行**节点用同段序号（v10/v20/v30/v40 互不依赖并行铺开）；层内**串行**链序号递增（如 Traffic 的 `v20-build → v21-test → v22-e2e`）。新增节点必须落在既有层码内；新增层码须先改本规范（本文件 PR）。
 
-| 文件 | 触发 | 不并入的理由 |
+## 4. 路由矩阵（每个节点的 `if` 全集）
+
+| 节点 | if 条件（语义） | runner |
 |---|---|---|
-| `release.yml` | push tag `v*` | 生产发布路径：门禁文件语法错误不得波及发版能力；自带 tag 侧 policy 前置（Tag↔props/CHANGELOG/分支可达） |
-| `docs-deploy.yml` | push main + `paths:` | paths 过滤让非文档 push 零 run；并入单入口反而每次 main push 多一个空跑 job |
-| 仓专项（Loom bench-nightly / platform-matrix / provider-matrix / watchdog…） | 各自独立语义 | nightly/手动/外部巡检，与 PR 门禁无耦合 |
+| `e10-policy` | 无（恒跑） | ubuntu-latest |
+| `e20-triage` | 无（恒跑；非 PR 上下文内部返回 `docs_only=false`） | ubuntu-latest |
+| `v10-ci` | policy 绿 ∧ ¬schedule ∧ ¬tag ∧ ¬快速通道 | linux-h / runners_matrix |
+| `v20-extension` | policy 绿 ∧ v10 绿（¬schedule ∧ ¬快速通道） | 按仓 |
+| `v30-docs` | policy 绿 ∧ 快速通道（docs/* ∧ dev ∧ 纯文档） | ubuntu-latest |
+| `v40-heavy` | policy 绿 ∧（schedule ∨ dispatch ∨ push main） | linux-l/linux-h |
+| `m10-docs-merge` | policy 绿 ∧ 快速通道 ∧ v30 绿 ∧ 非 draft | ubuntu-latest |
+| `r10-release` | push ∧ tag `v*`（e10 的 tag policy 前置已在入口完成） | 按 release 配置 |
+| `w10-docs-deploy` | push ∧ main（**paths 守卫**：job 第一步无文档路径显式跳过） | ubuntu-latest |
 
-## 8. 单源 reusable 清单（dotgithub）
+**快速通道** = 来源 `docs/*` ∧ 目标 `dev` ∧ diff 纯文档（`.github/**` 恒非 docs）。
 
-| reusable | 消费方 | 状态 |
+**路由效果对照**：
+
+| 场景 | 激活节点 |
+|---|---|
+| docs/* 纯文档 PR → dev | e10, e20, v30, m10（自动合并删分支；~2 分钟） |
+| feat 代码 PR → dev | e10, e20, v10, v20（完整门禁；v40 不跑） |
+| docs/* 夹代码 PR → dev | 同上（triage 判 false，双条件门缺内容条件） |
+| 非法来源 PR（feat→main 等） | e10 红，**全链短路**（秒级） |
+| push main | e10, e20, w10（paths 守卫），v40（重线） |
+| tag v* push | e10（tag policy 前置），r10（发布管线） |
+| schedule nightly | e10, e20, v40 |
+| dispatch 手动 | e10, e20 + 指定节点（inputs 选择） |
+
+## 5. 传递 skip 防线（三原则 + 一纪律）
+
+1. **入口恒跑**：e10/e20 不挂任何 `if`。e20 非 PR 上下文内部返回成功。
+2. **e10 是唯一合法的红**：红=非法输入，下游短路是正确行为（省资源池）。
+3. **下游禁用隐式 `success()`**：凡挂 `needs` 的节点一律显式 `!cancelled() && needs.<父>.result == 'success' && <业务条件>`（CI-INFRA §9 判例①）。
+4. **纪律：gate.yml 自身的修改**必须在合并前 `workflow_dispatch` 冒烟验证——单文件形态下 gate.yml 语法错误波及面是全事件（含发布），靠冒烟兜底（判例：charter 孤儿键 startup_failure×5）。
+
+## 6. 单文件形态的安全边界
+
+release 并入单文件后的风险与缓解：
+
+| 风险 | 缓解 |
+|---|---|
+| gate.yml 语法错误波及发布 | §5 纪律 4：改动必 dispatch 冒烟；actionlint 进本地提交流程 |
+| PR 事件拿到发布 secrets | GitHub 原生：fork PR 不投递 secrets；组织内同仓 PR 无此面；发布 secrets 只配在 `r10-release` 的 `secrets:` 映射，其他节点不可见 |
+| 误触发发布 | r10 的 if 锁定 `tag v*` push 事件；e10 tag policy（Tag↔props/CHANGELOG/分支可达）在入口已完成，不合法 tag 入口即红 |
+
+## 7. 单源 reusable 清单（dotgithub）
+
+| reusable | 消费节点 | 状态 |
 |---|---|---|
-| `reusable-ci.yml` | 单入口 ci job | 已有 |
-| `reusable-policy-check.yml` | 入口 policy job（PR 段）+ release.yml（tag 段） | 已有 |
-| `reusable-docs-triage.yml` | 入口 triage job | 已有（无条件常跑形态） |
-| `reusable-docs-check.yml` | docs-check job | 已有 |
-| `reusable-docs-merge.yml` | docs-merge job | 已有 |
-| `reusable-docs-deploy.yml` / `reusable-release.yml` | 独立文件 | 已有 |
+| `reusable-policy-check.yml` | e10（PR 段 + tag 段） | 已有 |
+| `reusable-docs-triage.yml` | e20 | 已有（无条件常跑形态） |
+| `reusable-ci.yml` | v10 | 已有 |
+| `reusable-docs-check.yml` | v30 | 已有 |
+| `reusable-docs-merge.yml` | m10 | 已有 |
+| `reusable-release.yml` | r10 | 已有 |
+| `reusable-docs-deploy.yml` | w10 | 已有 |
 
-本设计**不新增 reusable**——只改仓侧桩的拓扑（policy 从独立文件并入入口）。
+本设计**不新增 reusable**，只改仓侧拓扑。
 
-## 9. 仓内桩形态（目标模板全文）
+## 8. 仓内桩形态（`gate.yml` 目标全文）
 
 ```yaml
-name: CI
+name: Gate
 
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main, dev]
-  workflow_dispatch:   # 仓专属 inputs（如 Tier include_windows）保留在此
+  schedule:
+    - cron: '0 18 * * *'        # 仓按需
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: gate-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  # ① 入口强校验（恒跑；唯一合法的红；红→下游全短路）
-  policy:
+  # ── 入口层（恒跑）──
+  e10-policy:
+    name: 强校验（来源/Tag/版本）
     uses: kernlab-dev/.github/.github/workflows/reusable-policy-check.yml@main
+    with:
+      version_project: 'src/....csproj'   # 仓参数
+      changelog_file: 'CHANGELOG.md'
 
-  # ② 内容分诊（恒跑恒成功——传递 skip 防线，勿挂 if）
-  triage:
+  e20-triage:
+    name: 分诊（路由信号）
     uses: kernlab-dev/.github/.github/workflows/reusable-docs-triage.yml@main
 
-  # ③ docs 快速通道质量门（双条件门收在此处）
-  docs-check:
-    needs: [policy, triage]
+  # ── 验证层 ──
+  v10-ci:
+    name: 完整门禁（build+全量测试）
+    needs: [e10-policy, e20-triage]
     if: >-
-      ${{ needs.policy.result == 'success' && needs.triage.outputs.docs_only == 'true' &&
-          startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' }}
-    uses: kernlab-dev/.github/.github/workflows/reusable-docs-check.yml@main
-
-  # ④ 完整 CI（policy 红短路；快速通道让路；schedule 由专项 job 承担）
-  ci:
-    needs: [policy, triage]
-    if: >-
-      ${{ !cancelled() && needs.policy.result == 'success' && github.event_name != 'schedule' &&
-          !(needs.triage.outputs.docs_only == 'true' &&
+      ${{ !cancelled() && needs.e10-policy.result == 'success' && github.event_name != 'schedule' &&
+          !startsWith(github.ref, 'refs/tags/') &&
+          !(needs.e20-triage.outputs.docs_only == 'true' &&
             startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev') }}
     uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml@main
     with:
-      runner: ubuntu-latest            # 仓按需切 linux-h / runners_matrix
+      runner: linux-h                     # 仓参数
+      use_setup_dotnet: false
       build_config: Release
       test_projects: 'tests/*/*.csproj'
       test_retries: '1'
 
-  # ⑤ 仓专属扩展 job（模板：一律显式条件，禁用隐式 success()）
-  # extension:
-  #   needs: [policy, triage, ci]
-  #   if: >-
-  #     ${{ !cancelled() && needs.policy.result == 'success' && needs.ci.result == 'success' }}
-  #   runs-on: linux-h
+  v20-extension:                          # 仓扩展（Tier: matrix→raft 套件 / Traffic: build→test→e2e）
+    name: 仓扩展验证
+    needs: [e10-policy, e20-triage, v10-ci]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' && needs.v10-ci.result == 'success' &&
+          github.event_name == 'pull_request' }}
+    runs-on: linux-h
+    steps: []                             # 仓专属步骤
 
-  # ⑥ docs 自动合并终段（PAT 未配置显式跳过不假绿）
-  docs-merge:
-    needs: [policy, triage, docs-check]
+  v30-docs:
+    name: docs 质量门
+    needs: [e10-policy, e20-triage]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' && needs.e20-triage.outputs.docs_only == 'true' &&
+          startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-docs-check.yml@main
+
+  v40-heavy:
+    name: 重线（AOT/长稳/全矩阵）
+    needs: [e10-policy, e20-triage]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' &&
+          (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+           (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+    runs-on: linux-l
+    steps: []                             # 仓专属步骤（Loom AOT 探针 / Tier 长稳等）
+
+  # ── 汇合层 ──
+  m10-docs-merge:
+    name: docs 自动合并（squash+删分支）
+    needs: [e10-policy, e20-triage, v30-docs]
     if: >-
       ${{ !cancelled() &&
-          needs.policy.result == 'success' && needs.triage.outputs.docs_only == 'true' &&
+          needs.e10-policy.result == 'success' && needs.e20-triage.outputs.docs_only == 'true' &&
           startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' &&
-          needs.docs-check.result == 'success' &&
+          needs.v30-docs.result == 'success' &&
           github.event.pull_request.draft == false }}
     uses: kernlab-dev/.github/.github/workflows/reusable-docs-merge.yml@main
     secrets:
       DOCS_MERGE_PAT: ${{ secrets.DOCS_MERGE_PAT }}
+
+  # ── 交付层 ──
+  r10-release:
+    name: 发布管线（tag v*）
+    needs: [e10-policy]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' &&
+          github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-release.yml@main
+    with:
+      dotnet_version: '8.0.x'             # 仓参数
+    secrets:
+      NUGET_USER: ${{ secrets.NUGET_USER }}
+      # ...仓发布 secrets
+
+  w10-docs-deploy:
+    name: 文档站（构建→聚合→上站）
+    needs: [e10-policy]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' &&
+          github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: paths 守卫（无文档路径显式跳过）
+        run: |
+          git diff --name-only "${{ github.event.before }}...${{ github.sha }}" \
+            | grep -Eq '^(docs-site/|src/.*/docs/|.*\.md$|toc\.yml$)' || {
+            echo "非文档 push——跳过文档站发布"; exit 0; }
+      # ...docfx 构建 → 聚合 dispatch（原 docs-deploy 内容）
 ```
 
-Tier/Traffic 等带扩展链的仓：扩展 job 组挂在 ④⑤ 形态上（Tier：matrix → build-test-pack；Traffic：关键字/ui-dist → build → test → kind-e2e），条件全部显式化后进入单入口。
+Loom 专项外围（org runner watchdog 等基础设施自动化）**不属于仓工作流体系**，保持独立文件白名单：`win-runner-watchdog.yml` 类。bench-nightly / platform-matrix / provider-matrix 并入 `v40-heavy`/`n` 扩展节点或保留白名单，试点时逐仓裁定。
 
-## 10. 迁移方案
+## 9. 迁移方案
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| 0 | 传递 skip 根治（triage 无条件常跑 + 消费端条件） | ✅ 已落地（.github#12 + 7 仓 PR，tier build-test-pack 实证恢复） |
-| 1 | 本设计稿评审定稿（决策点 D1-D3） | 🔵 本文 |
-| 2 | Tier 试点：policy 并入 ci.yml + 删 policy.yml，验证单 run 形态 | 待 D1-D3 定 |
-| 3 | 其余 6 仓机械推广（同 diff 形状）+ workflow-templates 更新 | 待阶段 2 |
-| 4 | 将来升级 Team 配 rulesets：required check 仅挂 `CI` 一个 | 远期 |
+| 0 | 传递 skip 根治（triage 无条件常跑） | ✅ .github#12 + 7 仓（tier build-test-pack 实证恢复） |
+| 1 | 设计稿评审（本文 0.2.0） | 🔵 待定稿 |
+| 2 | Tier 试点：`gate.yml` 单文件落地（删 ci.yml/policy.yml/release.yml/docs-deploy.yml），dispatch 冒烟 + 一个真实 PR 验证全路由 | 待定稿 |
+| 3 | 其余 6 仓机械推广 + workflow-templates 更新（新建仓只有 `gate.yml` 模板） | 待阶段 2 |
+| 4 | Cohort：随其 #49 落地按本模板直接接线 | 排队 |
+| 5 | rulesets（需 Team）：required check 仅 `Gate` 一个 | 远期 |
 
-**回滚**： revert 仓侧桩 PR 即回双文件形态（reusable 层无破坏性变更）。
-**Cohort**：随其 #49（unify-ci，在建）落地后按本模板直接接线，不走旧形态。
+**回滚**：revert 仓侧 PR 即回多文件形态。
+**每仓迁移 checklist**：①policy 段入 e10（含 version_project/changelog 参数）②release 内容入 r10 ③docs-deploy 内容入 w10（paths 守卫）④重线/AOT 入 v40 ⑤扩展链显式条件化 ⑥删四个旧文件 ⑦dispatch 冒烟（PR/push/tag 四事件至少冒烟 PR+tag）⑧secrets 迁移核对（NUGET_*/DOCS_*）。
 
-## 11. 兼容性影响
+## 10. 兼容性影响
 
-- PR 状态检查从两个（CI + Policy）变一个（CI，内含 policy job）——将来 rulesets required check 更简单；
-- 非法来源 PR 的 CI run 变为秒级红（原为 policy 红照跑全量）；
-- 运行列表噪音减半（PR 事件 2 run → 1 run）；
-- 并发组不变（`ci-${{ github.workflow }}-${{ github.ref }}`）；单文件后同 ref 单 run；
-- `policy.yml` 文件退役：各仓删除（release.yml 的 policy job 不受影响）。
+- PR 状态检查：`CI`+`Policy` 两个 → `Gate` 一个（required check 将来只挂它）；
+- 非法来源 PR：秒级红（原为 policy 红照烧全量）；
+- tag 发布：`Release` 独立 run 消失，变 `Gate` run 内的 `r10-release` 节点（发布历史按 tag 过滤依然成立）；
+- docs-deploy：paths 触发的独立 run 消失，变 main push run 内节点（无文档路径时该节点内部显式跳过，秒级空转）；
+- 运行列表：PR 事件 2 run → 1 run，push/tag 事件各自 1 run；
+- workflow 名变更 `CI→Gate`：历史 run 按旧名保留，检查名以新 run 为准（迁移窗口内两者并存，无冲突）。
 
-## 12. 决策点（待定）
+## 11. 决策记录
 
-| # | 决策 | 本稿立场 | 备选 |
+| # | 决策 | 结论 | 依据 |
 |---|---|---|---|
-| D1 | policy 红时重门禁短路？ | **短路**（省池；非法来源注定不能合） | 照跑（作者同时看测试信号，烧满全程） |
-| D2 | 单入口命名 | 保持 `CI`（状态检查名不变，迁移零心智成本） | 改 `Gate`（语义更准，检查名变化） |
-| D3 | docs-deploy 长期归属 | 保持独立（paths 触发零空跑） | 并入（main push 每次多一个守卫 job） |
+| D1 | policy 红时重门禁短路 | **短路** | 非法来源注定不能合；省 30 分钟 linux-h |
+| D2 | 单入口命名 | **`gate.yml` / Gate**，节点按 §3 层码规范 | 统一入口语义；文件名=职责名 |
+| D3 | docs-deploy / release 归属 | **全部并入单入口**（0.2.0 评审定案，推翻 0.1.0 的"关键路径隔离"） | 统一入口分流；语法错误风险由 §5 纪律 4 冒烟兜底 |
