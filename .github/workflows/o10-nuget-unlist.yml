@@ -1,0 +1,64 @@
+name: o10-nuget-unlist
+
+# 【组织中央运维工具】NuGet 包软下架（unlist——列表隐藏，已安装消费者不受影响）。
+# 与 r10-release（发布）配套 = 发布↔回滚对（RELEASE.md §9 回滚口径）。全组织单实例（本仓）：
+# KernLab.* 任意包通用，包 ID/版本由 dispatch 输入给定，各产品仓零文件零 secret。
+# 密钥 = 组织级 NUGET_UNLIST_USER（本仓 PUBLIC → Free 计划下组织 secret 原生投递，送达探针实证）。
+# 手动 dispatch：packageId + version + 确认词；凭据 runner 内取用、日志自动打码（家族凭据纪律）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      package_id:
+        description: '包 ID（如 KernLab.Tier.Contracts）'
+        required: true
+        type: string
+      version:
+        description: '包版本（如 1.0.0-alpha.19）'
+        required: true
+        type: string
+      confirm:
+        description: '确认词：unlist（防误触）'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  unlist:
+    runs-on: ubuntu-latest
+    env:
+      PACKAGE_ID: ${{ github.event.inputs.package_id }}
+      PACKAGE_VERSION: ${{ github.event.inputs.version }}
+    steps:
+      - name: 守门（确认词 + GA 包保护名单）
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.inputs.confirm }}" != "unlist" ]; then
+            echo "::error::确认词非 unlist——放弃操作。"
+            exit 1
+          fi
+          # 保护名单：正式版/GA 包不在本 workflow 软下架范围（预发布孤包清理专用）
+          case "$PACKAGE_VERSION" in
+            *-* ) : ;;                       # 含 prerelease 段 = 预发布，允许
+            * ) echo "::error::$PACKAGE_ID $PACKAGE_VERSION 非 prerelease——GA 包禁走本 workflow（unlist 走人工评审）。"; exit 1;;
+          esac
+          echo "unlist 目标：$PACKAGE_ID $PACKAGE_VERSION"
+
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Unlist（软下架）
+        run: |
+          dotnet nuget delete "$PACKAGE_ID" "$PACKAGE_VERSION" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "${{ secrets.NUGET_UNLIST_USER }}" \
+            --non-interactive
+
+      - name: 结果回显（包页可见性核对指引）
+        if: always()
+        run: |
+          echo "unlist 完成：https://www.nuget.org/packages/$PACKAGE_ID/$PACKAGE_VERSION 应返回 404；"
+          echo "版本列表页（https://www.nuget.org/packages/$PACKAGE_ID）应不再展示该版本。"
