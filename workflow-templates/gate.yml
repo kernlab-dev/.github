@@ -1,0 +1,70 @@
+name: Gate
+
+# KernLab 家族单入口（每仓唯一 workflow）：规范见组织 CI-GATE.md
+# 本文件是纯接线：入口层继承组织 reusable；缺省 v10 适配简单仓（tests/*/*.csproj 顺序跑）。
+# 扩展/重线/发布/文档站节点按需启用（见末尾注释块与 CI-GATE §8 完整形态）。
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+concurrency:
+  group: gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── 入口层（恒跑）──
+  e10-policy:
+    name: 强校验（来源/Tag/版本）
+    uses: kernlab-dev/.github/.github/workflows/reusable-e10-policy.yml@main
+    # 版本对齐检查需要时配置：version_project / changelog_file（缺省跳过）
+
+  e20-triage:
+    name: 分诊（路由信号）
+    uses: kernlab-dev/.github/.github/workflows/reusable-e20-triage.yml@main
+
+  # ── 验证层 ──
+  v10-ci:
+    name: 完整门禁（build+全量测试）
+    needs: [e10-policy, e20-triage]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' && github.event_name != 'schedule' &&
+          !startsWith(github.ref, 'refs/tags/') &&
+          !(needs.e20-triage.outputs.docs_only == 'true' &&
+            startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev') }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-v10-ci.yml@main
+    # ★简单仓零参数零槽位文件（缺省=自动发现 sln + tests/*/*.csproj 逐个顺序跑）
+    # 偏离缺省时才加 with（runner/test_solution/test_filter…，全量参数见 CI-GATE §8）
+
+  # ── docs 快速通道（配 DOCS_MERGE_PAT 仓 secret 后自动合并生效）──
+  v30-docs:
+    name: docs 质量门
+    needs: [e10-policy, e20-triage]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' && needs.e20-triage.outputs.docs_only == 'true' &&
+          startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-v30-docs.yml@main
+
+  m10-docs-merge:
+    name: docs 自动合并（squash+删分支）
+    needs: [e10-policy, e20-triage, v30-docs]
+    if: >-
+      ${{ !cancelled() && needs.e10-policy.result == 'success' && needs.e20-triage.outputs.docs_only == 'true' &&
+          startsWith(github.head_ref, 'docs/') && github.base_ref == 'dev' && needs.v30-docs.result == 'success' &&
+          github.event.pull_request.draft == false }}
+    uses: kernlab-dev/.github/.github/workflows/reusable-m10-docs-merge.yml@main
+    secrets:
+      DOCS_MERGE_PAT: ${{ secrets.DOCS_MERGE_PAT }}
+
+  # ── 按需启用（打开注释 + 补仓参数；完整形态见 CI-GATE §8）──
+  # v20-extension:  仓扩展验证（自建池/外部端点链）
+  # v40-heavy:      重线 AOT/长稳/全矩阵（schedule/dispatch/push main）
+  # r10-release:    tag v* 发布（需 NUGET_* secrets + version_project 对齐）
+  # w10-docs-deploy: 文档站（需 docs-site/ + DOCS_SYNC_TOKEN）
