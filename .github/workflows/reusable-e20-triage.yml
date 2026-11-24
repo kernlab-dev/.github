@@ -8,6 +8,9 @@ name: e20-triage
 # 非 PR 上下文（push/dispatch）直接 docs_only=false 成功返回——快速通道仅 PR 语义。
 # docs 面口径与 docs-deploy 桩 paths 清单对齐；.github/** 恒非 docs——改 CI 的 PR 必须走全量
 # （且自动合并身份 PAT 无 workflows 权限，含 workflow 文件的 PR 本就不能自动落，两相吻合）。
+# repowiki 知识库目录（任意层级）/.qoderignore/.gitignore 计 docs——wiki 生成面与行为惰性文件；
+# 其下 yaml/json 随目录口径覆盖，不裸放 yaml/json（workflow/配置同为 yml/json，裸加即拆门禁）；
+# repowiki 不入 docs-deploy paths——非站点源，不触发站构建。
 # 判定失败 / 空 diff 一律保守 docs_only=false（宁可全量，不可漏跑）。
 # 判定按 PR 全量 diff（merge-base 起），每笔 push 重跑即重判——"先文档后补代码"的 PR 不会漏升级。
 
@@ -54,7 +57,7 @@ jobs:
           echo "--- changed files ($BASE...$HEAD_SHA) ---"
           echo "$files"
           globs="$CUSTOM_GLOBS"
-          [ -n "$globs" ] || globs='(\.md$|\.mdx$|^docs/|^docs-site/|(^|/)toc\.ya?ml$|COORDINATION\.md$|^README(\..*)?$|\.puml$|\.mermaid$|\.drawio$)'
+          [ -n "$globs" ] || globs='(\.md$|\.mdx$|^docs/|^docs-site/|(^|/)toc\.ya?ml$|COORDINATION\.md$|^README(\..*)?$|\.puml$|\.mermaid$|\.drawio$|(^|/)repowiki/|\.qoderignore$|\.gitignore$)'
           total=0
           non_docs=0
           while IFS= read -r f; do
