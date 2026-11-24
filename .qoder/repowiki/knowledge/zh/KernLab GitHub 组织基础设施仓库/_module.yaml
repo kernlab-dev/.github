@@ -1,0 +1,45 @@
+schema_version: 1
+module_path: root
+title: KernLab GitHub 组织基础设施仓库
+scope:
+    - README.md
+    - SECURITY.md
+    - SUPPORT.md
+    - VERSIONING.md
+source_files: []
+depends_on: []
+related_to: []
+kk_module_id: 0bb631e9-6a9d-4259-aff4-13c9655ac78f
+kk_cards:
+    architecture_design:
+        id: 5ecc08cc-f201-44c3-bbdb-a224778799c4
+        title: KernLab GitHub 组织基础设施仓库
+    coding_conventions:
+        id: 6f9c567e-7a7d-42aa-b3a4-b1d3ef42c94c
+        title: KernLab GitHub 组织基础设施仓库
+    overview:
+        id: a5076f37-78cd-4626-b1bb-20094f919380
+        title: KernLab GitHub 组织基础设施仓库
+    tech_stack:
+        id: 7eb389ae-eb85-48b2-afc1-1ff17b0be5d7
+        title: KernLab GitHub 组织基础设施仓库
+    unique_setup_and_commands:
+        id: 1637c53c-1999-4bdf-b241-374e2f7d05ad
+        title: KernLab GitHub 组织基础设施仓库
+    build_system:
+        id: 67a44c46-8fcd-4890-9b6c-2541f7f873f4
+        title: KernLab 家族 GitHub Actions 可复用工作流与 Gate 单入口管线
+    configuration_system:
+        id: 6462a1b2-5fb5-423e-bdf9-25d5fccf7657
+        title: GitHub Actions Gate 模板与可复用工作流配置体系
+    dependency_management:
+        id: 0707187b-bf4e-4017-b14f-ce554a75e1d2
+        title: .NET/NuGet 依赖与包发布集中式闸门
+    frontend_style:
+        id: 93b6a35f-7004-434b-9a64-471cacb7d329
+        title: DocFx 模板前端样式：Bootstrap 5 + 品牌自定义
+kk_repo_cards:
+    - build_system
+    - configuration_system
+    - dependency_management
+    - frontend_style

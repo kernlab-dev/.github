@@ -1,0 +1,25 @@
+schema_version: 1
+module_path: docfx_template
+title: KernLab docfx 文档站点标准模板
+scope:
+    - docfx-template/
+source_files: []
+depends_on: []
+related_to: []
+kk_module_id: c76f971a-9e62-4e6b-bd07-8858b1fcb83b
+kk_cards:
+    architecture_design:
+        id: e986e2c2-4c99-4cb3-a7aa-d3e762caeaff
+        title: KernLab docfx 文档站点标准模板
+    coding_conventions:
+        id: c6aadc65-b553-4de3-81d4-64f2f3e0ccd1
+        title: KernLab docfx 文档站点标准模板
+    overview:
+        id: 49c7ec9b-3172-4798-97cf-b9b670c28742
+        title: KernLab docfx 文档站点标准模板
+    tech_stack:
+        id: b7490c3e-756a-41ac-ba08-ba6bacb88fcc
+        title: KernLab docfx 文档站点标准模板
+    unique_setup_and_commands:
+        id: d5d4583a-acb2-4420-a657-df0129a4e9ee
+        title: KernLab docfx 文档站点标准模板

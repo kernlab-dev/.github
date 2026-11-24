@@ -1,0 +1,42 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+commit: f59939bfa158e4c05cd6dbff60ba87134ea42b4c
+branch: main
+exported_at: "2026-11-23T09:11:34Z"
+modules:
+    docfx_template:
+        dir_name: KernLab docfx 文档站点标准模板
+        title: KernLab docfx 文档站点标准模板
+        scope:
+            - docfx-template/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    github_workflows:
+        dir_name: GitHub Actions 可复用工作流与仓库 Gate 模板
+        title: GitHub Actions 可复用工作流与仓库 Gate 模板
+        scope:
+            - .github/workflows/
+            - workflow-templates/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: docfx_template
+              reason: reusable-docs-deploy.yml 通过 docfx metadata+build 消费本模块的 docs-site/docfx.json 站点骨架模板，gate.yml 暴露 w10-docs-deploy 入口装配此管线。
+    root:
+        dir_name: KernLab GitHub 组织基础设施仓库
+        title: KernLab GitHub 组织基础设施仓库
+        scope:
+            - README.md
+            - SECURITY.md
+            - SUPPORT.md
+            - VERSIONING.md
+        source_files: []
+        children:
+            - docfx_template
+            - github_workflows
+        depends_on: []
+        related_to: []

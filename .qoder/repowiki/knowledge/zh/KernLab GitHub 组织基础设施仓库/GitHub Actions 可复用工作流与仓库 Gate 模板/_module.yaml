@@ -1,0 +1,29 @@
+schema_version: 1
+module_path: github_workflows
+title: GitHub Actions 可复用工作流与仓库 Gate 模板
+scope:
+    - .github/workflows/
+    - workflow-templates/
+source_files: []
+depends_on: []
+related_to:
+    - path: docfx_template
+      reason: reusable-docs-deploy.yml 通过 docfx metadata+build 消费本模块的 docs-site/docfx.json 站点骨架模板，gate.yml 暴露 w10-docs-deploy 入口装配此管线。
+kk_module_id: 76bfbbf0-3ab8-440c-9f9f-4c60dde956cd
+kk_ordinal: 1
+kk_cards:
+    architecture_design:
+        id: eddf2b1d-d44e-462c-8389-0f5658094133
+        title: GitHub Actions 可复用工作流与仓库 Gate 模板
+    coding_conventions:
+        id: b4af6acf-7385-4e05-9602-bdf07692b137
+        title: GitHub Actions 可复用工作流与仓库 Gate 模板
+    overview:
+        id: 73d72ae7-a1a7-48c0-b8b6-e43297c35b09
+        title: GitHub Actions 可复用工作流与仓库 Gate 模板
+    tech_stack:
+        id: a445b47d-d523-40f6-967c-5a649b46bcba
+        title: GitHub Actions 可复用工作流与仓库 Gate 模板
+    unique_setup_and_commands:
+        id: 51ea88cc-c3fd-4008-94e0-71992805a838
+        title: GitHub Actions 可复用工作流与仓库 Gate 模板

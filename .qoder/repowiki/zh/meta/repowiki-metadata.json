@@ -1,0 +1,284 @@
+{
+  "wiki_repo": {
+    "id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+    "name": "kernlab-github-public",
+    "progress_status": "completed",
+    "wiki_present_status": "COMPLETED",
+    "recovery_checkpoint": "wiki_generation_completed",
+    "last_commit_id": "f59939bfa158e4c05cd6dbff60ba87134ea42b4c",
+    "last_commit_update": "2026-11-23T09:13:22Z",
+    "gmt_create": "2026-11-23T09:13:22Z",
+    "gmt_modified": "2026-11-23T09:13:22Z",
+    "extend_info": "{\"language\":\"zh\",\"active\":true,\"branch\":\"main\"}"
+  },
+  "wiki_catalogs": [
+    {
+      "id": "b1dfb63d-8a8b-41a3-8ac7-9cc1c9d9af0b",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "项目概述与定位",
+      "description": "project-overview",
+      "prompt": "为 KernLab 组织基础设施模板仓库创建全面的项目概述内容。解释这个 GitHub 约定特殊仓库的三大核心职责：组织公开门面、组织级默认社区健康文件承载、家族公共工程文档与共享流水线逻辑单源。阐述该仓库如何作为 kernlab-dev 组织的元基础设施，服务于所有 .NET 生态子项目的 CI/CD、文档与治理需求。清晰说明 reusable workflow 的复用机制、workflow-templates 调用桩的作用，以及与其他成员仓库之间的关系。包含产品矩阵概览（Tier、Loom、Cell、Claim、Traffic 等）的定位说明。面向初次接触的新成员和需要理解仓库边界的维护者，使用与代码库一致的术语（如 reusable、workflow_call、可组合 .NET 底层家族）。提供清晰的入口导航，帮助读者快速定位到快速开始、流水线架构或文档系统章节。",
+      "progress_status": "completed",
+      "dependent_files": "README.md,profile/README.md",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "kk_dependent_files": [
+        "README.md",
+        "profile/README.md"
+      ]
+    },
+    {
+      "id": "f6532646-50d4-4a56-911a-f73734ba5568",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "快速开始：为新仓库添加标准化 CI/CD",
+      "description": "quick-start",
+      "prompt": "创建 KernLab 组织新仓库的快速开始指南，指导开发者从零复制最小可运行的 GitHub Actions 调用桩并接入家族公共流水线。内容必须基于 workflow-templates/ci.yml、docs-deploy.yml 和 policy.yml 三个示例工作流，按顺序说明：1）从 Actions 页面或本仓选择 template；2）把 `uses: kernlab-dev/.github/.github/workflows/reusable-ci.yml` 替换为业务仓库的真实引用路径；3）配置 test_projects、runner、runners_matrix、ui_project_path 等关键字 input；4）在仓库 Settings → Environments 中配置 OIDC 依赖发布所需 Secret/Variable；5）首次 PR 触发 policy-check、ci build、test 验证；6）打 vX.Y.Z-alpha.1 Tag 触发行版本构建和 NuGet Trusted Publishing。包含完整的最小 YAML 示例、常见配置选项表和预期输出（Actions 日志、NuGet 包、DocFX 站点）。补充典型故障场景：分支名不匹配 main/dev、Tag 不符合 SemVer、CHANGELOG 缺失段落、GitHub Actions runner 网络超时、OIDC Token 未授权等解决步骤。语言保持初学者友好但给出足够的实现细节，以便有经验的开发者直接参照落地。",
+      "progress_status": "completed",
+      "dependent_files": "workflow-templates/ci.yml,workflow-templates/docs-deploy.yml,workflow-templates/policy.yml,workflow-templates/gate.yml,workflow-templates/gate.properties.json,.github/workflows/o10-nuget-unlist.yml,.github/workflows/reusable-v10-ci.yml,.github/workflows/reusable-e10-policy.yml",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 1,
+      "kk_dependent_files": [
+        "workflow-templates/ci.yml",
+        "workflow-templates/docs-deploy.yml",
+        "workflow-templates/policy.yml",
+        "workflow-templates/gate.yml",
+        "workflow-templates/gate.properties.json",
+        ".github/workflows/o10-nuget-unlist.yml",
+        ".github/workflows/reusable-v10-ci.yml",
+        ".github/workflows/reusable-e10-policy.yml"
+      ]
+    },
+    {
+      "id": "61fe2436-5d04-44fc-8174-e3779f3822c1",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "Reusable Workflow 参考与输入参数",
+      "description": "reusable-workflow-reference",
+      "prompt": "创建 KernLab 组织四条 reusable workflow 的统一 API 参考文档，以 GitHub Actions `workflow_call` 接口为边界，对每个 reusable 列出 input 参数、类型、是否必需、默认值、取值范围和行为说明。按以下分组呈现：1）reusable-ci：runner、runners_matrix、test_projects、ui_project_path、enable_aot、aot_targets、skip_pack 等参数的详细解释；2）reusable-release：tag_prefix、version_source、trust_publish_scope、符号包处理等；3）reusable-docs-deploy：docset_name、output_dir、aggregation_workflow、token 相关 secret/variable 的用法；4）reusable-policy-check：branch rules、SemVer tag 校验、CHANGELOG 分段匹配规则。每个参数需提供来自实际 workflow 的最小用法示例和反例。解释这些 reusable workflow 之间的调用关系：policy-check 通常是 PR 前置门，ci 负责构建测试并产出 artifacts，release 根据正式或 preview 标签走不同测试强度，docs-deploy 依赖前序 workflow 产物进行 DocFX metadata 聚合。补充环境变量要求、Secret 命名约定（如 DOCS_SYNC_TOKEN）、重试与失败告警模式，以及向后兼容承诺：新增 input 不应破坏既有调用桩。",
+      "progress_status": "completed",
+      "dependent_files": ".github/workflows/reusable-ci.yml,.github/workflows/reusable-release.yml,.github/workflows/reusable-docs-deploy.yml,.github/workflows/reusable-policy-check.yml,.github/workflows/reusable-v10-ci.yml,.github/workflows/reusable-docs-check.yml,.github/workflows/reusable-docs-merge.yml,.github/workflows/reusable-m10-docs-merge.yml,.github/workflows/reusable-r10-release.yml,.github/workflows/reusable-w10-docs-deploy.yml,.github/workflows/reusable-e10-policy.yml,.github/workflows/o10-nuget-unlist.yml",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 2,
+      "kk_dependent_files": [
+        ".github/workflows/reusable-ci.yml",
+        ".github/workflows/reusable-release.yml",
+        ".github/workflows/reusable-docs-deploy.yml",
+        ".github/workflows/reusable-policy-check.yml",
+        ".github/workflows/reusable-v10-ci.yml",
+        ".github/workflows/reusable-docs-check.yml",
+        ".github/workflows/reusable-docs-merge.yml",
+        ".github/workflows/reusable-m10-docs-merge.yml",
+        ".github/workflows/reusable-r10-release.yml",
+        ".github/workflows/reusable-w10-docs-deploy.yml",
+        ".github/workflows/reusable-e10-policy.yml",
+        ".github/workflows/o10-nuget-unlist.yml"
+      ]
+    },
+    {
+      "id": "c432833c-b227-4713-86fd-87ae86a57abe",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "流水线架构与执行模型",
+      "description": "pipeline-architecture",
+      "prompt": "为 KernLab 家族的 GitHub Actions 流水线创建架构文档，重点解释 reusable workflow 的逻辑单源设计。说明四种流水线的职责边界和调用链路：PR/Push 事件触发 reusable-policy-check 进行分支与版本策略校验；reusable-ci 通过多 runner 矩阵执行 .NET 构建、单元测试与 NativeAOT 验证，并可启用卫星 UI 预构建；reusable-release 走 NuGet Trusted Publishing/OIDC 认证完成 preview 与正式版打包发布；reusable-docs-deploy 将 DocFX metadata 上传至 docs.kernlab.dev 聚合平台。用文字流程图表达：source code → policy check → ci build/test → artifacts/docs → release/tag → NuGet publication。说明 GitHub Actions runner 组合决策、条件性能力开关（AOT、UI 预构建、skip_pack）、重试策略、artifact 生命周期与跨 workflow 传递方式。明确各仓库只保留薄调用桩的设计原因，以及如何在不改变调用桩的前提下扩展 reusable 逻辑。讨论安全性：OIDC trusted publishing 替代长期 token、secret 最小暴露面；可扩展性与性能：Runner 矩阵、并行测试、缓存 SDK/nuget 依赖、避免重复构建；问题排查：如何从 Actions UI 定位 failing step、查看原始 runner 输出。",
+      "progress_status": "completed",
+      "dependent_files": ".github/workflows/reusable-ci.yml,.github/workflows/reusable-release.yml,.github/workflows/reusable-docs-deploy.yml,.github/workflows/reusable-policy-check.yml,workflow-templates/ci.yml,workflow-templates/docs-deploy.yml,workflow-templates/policy.yml,workflow-templates/gate.yml,.github/workflows/reusable-v10-ci.yml,.github/workflows/reusable-r10-release.yml,.github/workflows/reusable-w10-docs-deploy.yml,.github/workflows/reusable-docs-merge.yml",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 3,
+      "kk_dependent_files": [
+        ".github/workflows/reusable-ci.yml",
+        ".github/workflows/reusable-release.yml",
+        ".github/workflows/reusable-docs-deploy.yml",
+        ".github/workflows/reusable-policy-check.yml",
+        "workflow-templates/ci.yml",
+        "workflow-templates/docs-deploy.yml",
+        "workflow-templates/policy.yml",
+        "workflow-templates/gate.yml",
+        ".github/workflows/reusable-v10-ci.yml",
+        ".github/workflows/reusable-r10-release.yml",
+        ".github/workflows/reusable-w10-docs-deploy.yml",
+        ".github/workflows/reusable-docs-merge.yml"
+      ]
+    },
+    {
+      "id": "52c4e56f-4b5e-483b-91ad-75455147951b",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "DocFX 文档站模板指南",
+      "description": "docfx-template-guide",
+      "prompt": "编写 kernlab-dev 组织 DocFX 文档站模板的使用与维护指南，面向需要在某个项目中启用标准技术文档站的 .NET 开发者和文档作者。基于 docfx.json、index.md、toc.yml、main.css 等文件，说明目录结构语义、站点根入口、TOC 导航规则、自定义样式注入点与主题定制方式。解释 metadata 生成、XML 注释提取、API 引用和与 reusable-docs-deploy 的集成关系：哪些文件夹放置 source 文档，哪些产出需要纳入 docs.kernlab.dev 聚合。提供完整示例：从复制模板、修改站点标题和 TOC、写入一篇 index 文档、运行 `dotnet tool run docfx --serve` 本地预览，再到接入 GitHub Pages 或 Cloudflare Pages 的路径说明。明确已记录的限制与陷阱（例如文档中已声明的坑位），包括 TOC 层级限制、CSS 选择器优先级、多 docset 聚合时的 ID 冲突、相对链接解析等，并给出解决方案。对于不熟悉 DocFX 的初学者，先解释“什么是 DocFX、它与传统博客/Markdown 静态站的区别”；对于有经验开发者，则深入 docfx.json schema、custom templates、metadata pipeline 和扩展点。",
+      "progress_status": "completed",
+      "dependent_files": "docfx-template/docfx.json,docfx-template/index.md,docfx-template/toc.yml,docfx-template/main.css,docfx-template/README.md",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 4,
+      "kk_dependent_files": [
+        "docfx-template/docfx.json",
+        "docfx-template/index.md",
+        "docfx-template/toc.yml",
+        "docfx-template/main.css",
+        "docfx-template/README.md"
+      ]
+    },
+    {
+      "id": "93354985-c1f1-42a3-94cd-682fc2e9943f",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "版本管理与工程治理",
+      "description": "versioning-and-governance",
+      "prompt": "汇总 KernLab 组织对外版本的 SemVer 承诺与工程治理要点，供 NuGet 消费者、容器镜像用户和外部集成方阅读。基于 VERSIONING.md，详细说明版本格式 v<major>.<minor>.<patch>-[alpha.N|beta.N|rc.N]、预发布排序、兼容性承诺表（major/minor/patch 分别允许什么变更），以及对存储引擎磁盘格式、segment 布局、checksum、字段偏移与大端小端的重大变更为何一律升级 major。说明支持策略：默认仅支持最新正式版所在版本线，预发布不参与支持窗口；包、git Tag、容器镜像 Tag 对齐；已发布版本不可移动 Tag 或覆盖镜像。解释弃用与移除规则、迁移路径和回滚边界如何在 CHANGELOG/发布说明中标注。同时整合 SECURITY.md 的安全报告流程（私有漏洞报告渠道、供应链关注面、SLA 现状）和支持政策摘要。补充 workflow-level 约束：reusable-policy-check 如何校验 tag 是否符合 SemVer、如何处理 CHANGELOG 段落；若版本号不一致应如何反馈。提供实用对照表：常见变更案例属于 patch、minor 还是 major，并给出 README.md 中组织层沟通渠道、Issue/Discussions 优先的参与方式。",
+      "progress_status": "completed",
+      "dependent_files": "VERSIONING.md,SECURITY.md,SUPPORT.md,README.md",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 5,
+      "kk_dependent_files": [
+        "VERSIONING.md",
+        "SECURITY.md",
+        "SUPPORT.md",
+        "README.md"
+      ]
+    },
+    {
+      "id": "22f08367-7c55-44fc-b08e-b7dcc12ce7e0",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "高级配置与扩展指南",
+      "description": "advanced-configuration",
+      "prompt": "为需要深度定制 CI/CD 行为的高级用户和维护者提供配置指南。围绕可复用的扩展点展开：如何使用 runners_matrix 指定 GitHub 托管 Runner 与自建 Runner 的组合、何时以及在何种网络/性能诉求下切换 runner、如何配置缓存与并发；如何设置 test_projects glob 模式来限定解决方案中的测试项目，以及如何结合条件判断跳过无关测试；如何开启 enable_aot 并指定 aot_targets 验证 NativeAOT；如何配置 ui_project_path 触发卫星 UI 预构建阶段，并简要说明 Node.js 工具链依赖。说明 skip_pack、version_source 等发布控制 input 的含义与影响。解释如何扩展现有 reusable workflow：采用继承思路而非 copy-paste，新增 input 时保持向后兼容，并通过 workflow-templates 更新最小调用桩示例。对比官方模板与本组织 reusable 的差异，帮助用户理解为什么某些变量名为.runners_matrix、为何存在 enable_XXX 开关。提供安全提醒：避免在 logs 中打印 Secret、不要将 OIDC Token 或 DOCS_SYNC_TOKEN 暴露到 Action 输出。补充性能建议：避免不必要的 dotnet restore、尽量并行 test、合理使用 artifact 作用域减少传输开销。",
+      "progress_status": "completed",
+      "dependent_files": ".github/workflows/reusable-ci.yml,.github/workflows/reusable-release.yml,workflow-templates/ci.yml,docfx-template/docfx.json,workflow-templates/gate.yml,.github/workflows/reusable-v10-ci.yml,.github/workflows/reusable-docs-merge.yml,.github/workflows/o10-nuget-unlist.yml",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 6,
+      "kk_dependent_files": [
+        ".github/workflows/reusable-ci.yml",
+        ".github/workflows/reusable-release.yml",
+        "workflow-templates/ci.yml",
+        "docfx-template/docfx.json",
+        "workflow-templates/gate.yml",
+        ".github/workflows/reusable-v10-ci.yml",
+        ".github/workflows/reusable-docs-merge.yml",
+        ".github/workflows/o10-nuget-unlist.yml"
+      ]
+    },
+    {
+      "id": "f12a8a9d-720e-46bb-8a70-587bc358c11d",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "name": "故障排除手册",
+      "description": "troubleshooting",
+      "prompt": "编写针对 KernLab 组织 reusable CI/CD 流水线和 DocFX 模板的实战故障排除手册。按问题类别组织：1）策略检查失败：分支名不是 main 或 dev、PR 合并规则、Tag 不符合 vMAJOR.MINOR.PATCH[-prerelease] 格式、CHANGELOG 缺少必填段落、policy.yml 未正确 uses 对应 reusable workflow；2）CI 构建与测试失败：.NET SDK 版本不匹配、NativeAOT 编译错误、测试被 runners_matrix 或 test_projects 排除后漏测、Action runner 网络超时、Node/vite/vue-tsc 卫星 UI 预构建环境异常；3）文档构建失败：DocFX 模板 toc.yml 循环引用、index.md 无法加载、metadata 上传失败、DOCS_SYNC_TOKEN 权限不足；4）发布失败：OIDC Trusted Publishing 认证失败、scope 不正确、NuGet 包版本已被占用、symbol 包未正确签名。每个问题提供「现象」「可能原因」「定位步骤（含 Actions UI 中查看哪步日志、哪个 step name）」和「修复方案」；必要时附上最小可复现的 YAML 片段。加入通用排查清单：如何打开 verbose logging、如何确认 workflow file 引用的是期望分支、如何通过本地 `dotnet`/`docfx` 命令缩小问题范围。避免只写结论，要引导读者根据输出信息自行定位。",
+      "progress_status": "completed",
+      "dependent_files": ".github/workflows/reusable-ci.yml,.github/workflows/reusable-release.yml,.github/workflows/reusable-docs-deploy.yml,.github/workflows/reusable-policy-check.yml,workflow-templates/ci.yml,workflow-templates/docs-deploy.yml,workflow-templates/policy.yml",
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z",
+      "order": 7,
+      "kk_dependent_files": [
+        ".github/workflows/reusable-ci.yml",
+        ".github/workflows/reusable-release.yml",
+        ".github/workflows/reusable-docs-deploy.yml",
+        ".github/workflows/reusable-policy-check.yml",
+        "workflow-templates/ci.yml",
+        "workflow-templates/docs-deploy.yml",
+        "workflow-templates/policy.yml"
+      ]
+    }
+  ],
+  "wiki_items": [
+    {
+      "id": "b1dfb63d-8a8b-41a3-8ac7-9cc1c9d9af0b",
+      "catalog_id": "b1dfb63d-8a8b-41a3-8ac7-9cc1c9d9af0b",
+      "title": "项目概述与定位",
+      "description": "project-overview",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "f6532646-50d4-4a56-911a-f73734ba5568",
+      "catalog_id": "f6532646-50d4-4a56-911a-f73734ba5568",
+      "title": "快速开始：为新仓库添加标准化 CI/CD",
+      "description": "quick-start",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "61fe2436-5d04-44fc-8174-e3779f3822c1",
+      "catalog_id": "61fe2436-5d04-44fc-8174-e3779f3822c1",
+      "title": "Reusable Workflow 参考与输入参数",
+      "description": "reusable-workflow-reference",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "c432833c-b227-4713-86fd-87ae86a57abe",
+      "catalog_id": "c432833c-b227-4713-86fd-87ae86a57abe",
+      "title": "流水线架构与执行模型",
+      "description": "pipeline-architecture",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "52c4e56f-4b5e-483b-91ad-75455147951b",
+      "catalog_id": "52c4e56f-4b5e-483b-91ad-75455147951b",
+      "title": "DocFX 文档站模板指南",
+      "description": "docfx-template-guide",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "93354985-c1f1-42a3-94cd-682fc2e9943f",
+      "catalog_id": "93354985-c1f1-42a3-94cd-682fc2e9943f",
+      "title": "版本管理与工程治理",
+      "description": "versioning-and-governance",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "22f08367-7c55-44fc-b08e-b7dcc12ce7e0",
+      "catalog_id": "22f08367-7c55-44fc-b08e-b7dcc12ce7e0",
+      "title": "高级配置与扩展指南",
+      "description": "advanced-configuration",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    },
+    {
+      "id": "f12a8a9d-720e-46bb-8a70-587bc358c11d",
+      "catalog_id": "f12a8a9d-720e-46bb-8a70-587bc358c11d",
+      "title": "故障排除手册",
+      "description": "troubleshooting",
+      "extend": "{}",
+      "progress_status": "completed",
+      "repo_id": "a4dcbdda-52ca-fc71-9c44-e89b4263ad17",
+      "reference_count": 0,
+      "gmt_create": "2026-11-23T09:13:22Z",
+      "gmt_modified": "2026-11-23T09:13:22Z"
+    }
+  ],
+  "knowledge_relations": []
+}
